@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* Brand tokens */
+:root {
+  /* Gold premium */
+  --brand-gold: #c9a84c;
+  --brand-gold-light: #d4b96a;
+  --brand-gold-dark: #b8962e;
+
+  /* Navy */
+  --brand-navy: #0b1929;
+  --brand-navy-light: #0f2035;
+  --brand-navy-mid: #112038;
+
+  /* Light surfaces (nouveau) */
+  --brand-surface: #ffffff;
+  --brand-surface-alt: #f8f7f5;
+  --brand-surface-muted: #f1efeb;
+
+  /* Text sur fond clair (nouveau) */
+  --brand-text: #111827;
+  --brand-text-muted: #6b7280;
+
+  /* Borders clairs (nouveau) */
+  --brand-border: #e5e3dd;
+  --brand-border-light: #f0ede8;
+}
+
+/* Tailwind v4 — génère bg-gold, text-navy, bg-surface-alt, etc. */
+@theme inline {
+  --color-gold: var(--brand-gold);
+  --color-gold-light: var(--brand-gold-light);
+  --color-gold-dark: var(--brand-gold-dark);
+  --color-navy: var(--brand-navy);
+  --color-navy-light: var(--brand-navy-light);
+  --color-navy-mid: var(--brand-navy-mid);
+  --color-surface: var(--brand-surface);
+  --color-surface-alt: var(--brand-surface-alt);
+  --color-surface-muted: var(--brand-surface-muted);
+  --font-heading: var(--font-cormorant);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background-color: var(--brand-surface);
+  color: var(--brand-text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background-color: rgba(201, 168, 76, 0.2);
+  color: var(--brand-navy);
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Animation premium : fade + slide up ── */
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-fade-slide-up {
+  animation: fade-slide-up 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* ── Scroll hint mobile : cascade de chevrons ── */
+@keyframes scroll-chevron {
+  0%, 100% { opacity: 0.12; transform: translateY(-4px); }
+  55%       { opacity: 0.7;  transform: translateY(3px);  }
+}
+
+@utility animate-scroll-chevron {
+  animation: scroll-chevron 2.2s ease-in-out infinite;
+}
+
+@media (width: 375px) and (height: 667px) {
+  .hero-iphone-se {
+    min-height: 100svh;
+    justify-content: flex-start;
+    padding-top: 8rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .hero-iphone-se h1 {
+    margin-top: 1.25rem;
+    font-size: 2.25rem;
+  }
+
+  .hero-iphone-se p:not(:first-child) {
+    margin-top: 1.5rem;
+    font-size: 1rem;
+  }
+
+  .hero-iphone-se div:has(> a[href="/catalogue"]) {
+    margin-top: 2rem;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .hero-iphone-se div:has(> a[href="/catalogue"]) a {
+    width: 100%;
+    max-width: 20rem;
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
+  }
+}
