@@ -141,6 +141,28 @@ export default function ContactForm({
         />
       </div>
 
+      {/* Consentement RGPD */}
+      <div className="flex items-start gap-3 rounded-xl border border-white/8 bg-white/5 px-4 py-3.5">
+        <input
+          type="checkbox"
+          name="consent"
+          id="contact-form-consent"
+          required
+          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#C9A84C]"
+        />
+        <label htmlFor="contact-form-consent" className="text-xs leading-relaxed text-gray-400">
+          J&apos;accepte que mes données soient utilisées dans le cadre de ma demande conformément à la{" "}
+          <a
+            href="/politique-confidentialite"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#C9A84C] underline underline-offset-2 transition hover:text-[#d4b96a]"
+          >
+            politique de confidentialité
+          </a>. <span className="text-[#C9A84C]">*</span>
+        </label>
+      </div>
+
       <button
         type="submit"
         disabled={status === "loading"}

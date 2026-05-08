@@ -1,8 +1,6 @@
 import { Resend } from "resend";
 import { writeClient } from "@/lib/sanity";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const FROM = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
 const TO = "autologgia.web@gmail.com";
 
@@ -83,6 +81,9 @@ export async function POST(req: Request) {
       }
     }
   }
+
+  // Instanciation lazily dans le handler — évite l'erreur au build si la clé est absente
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
     await resend.emails.send({

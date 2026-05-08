@@ -4,6 +4,7 @@ import { client } from "@/lib/sanity";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RecentVehiclesGrid from "@/components/RecentVehiclesGrid";
+import HomepageContactForm from "@/components/HomepageContactForm";
 import type { Car } from "@/lib/types";
 
 export const metadata: Metadata = {
@@ -368,7 +369,7 @@ export default async function Home() {
 
       {/* ── CONTACT ── */}
       <section id="contact" className="bg-navy-light px-6 py-24">
-        <div className="mx-auto grid max-w-7xl gap-12 md:grid-cols-2 md:items-center">
+        <div className="mx-auto grid max-w-7xl gap-12 md:grid-cols-2 md:items-start">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.5em] text-[#C9A84C]">
               Contact
@@ -422,7 +423,8 @@ export default async function Home() {
               Choisissez votre moyen de contact préféré.
             </p>
 
-            <div className="mt-8 grid gap-3">
+            {/* Boutons rapides */}
+            <div className="mt-6 grid gap-3">
               <a
                 href="tel:+33664799424"
                 className="flex items-center justify-center gap-2 rounded-full bg-[#C9A84C] px-8 py-4 font-semibold text-white transition hover:bg-[#b8962e]"
@@ -431,13 +433,6 @@ export default async function Home() {
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.14 12a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 3.12 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 5.61 5.61l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
                 </svg>
                 Appeler maintenant
-              </a>
-
-              <a
-                href="/contact"
-                className="rounded-full border border-white/20 px-8 py-4 text-center font-medium text-white transition hover:border-white/40 hover:bg-white/5"
-              >
-                Envoyer un message
               </a>
 
               <a
@@ -451,6 +446,23 @@ export default async function Home() {
                 </svg>
                 WhatsApp
               </a>
+            </div>
+
+            {/* Séparateur */}
+            <div className="my-8 flex items-center gap-4">
+              <div className="h-px flex-1 bg-white/8" />
+              <span className="text-xs uppercase tracking-widest text-gray-600">ou</span>
+              <div className="h-px flex-1 bg-white/8" />
+            </div>
+
+            {/* Sous-titre formulaire */}
+            <p className="text-sm text-gray-400">
+              Envoyez-nous directement un message via le formulaire suivant.
+            </p>
+
+            {/* Formulaire premium */}
+            <div className="mt-6">
+              <HomepageContactForm />
             </div>
           </div>
         </div>

@@ -70,9 +70,12 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-2 border-t border-white/5 pt-8 text-xs text-gray-600 md:flex-row md:items-center md:justify-between">
-          <p>© {new Date().getFullYear()} Autologgia. Tous droits réservés.</p>
-          <p>Site conçu pour une expérience automobile premium.</p>
+        <div className="mt-10 flex flex-col gap-3 border-t border-white/5 pt-8 text-xs text-gray-600 md:flex-row md:items-center md:justify-between">
+          <p>© {new Date().getFullYear()} Autologgia – FRERES ROUX AUTO. Tous droits réservés.</p>
+          <nav className="flex flex-wrap gap-x-5 gap-y-1.5">
+            <a href="/mentions-legales" className="transition hover:text-gray-400">Mentions légales</a>
+            <a href="/politique-confidentialite" className="transition hover:text-gray-400">Politique de confidentialité</a>
+          </nav>
         </div>
       </div>
     </footer>

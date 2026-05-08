@@ -300,6 +300,28 @@ export default function EstimateForm() {
         />
       </div>
 
+      {/* Consentement RGPD */}
+      <div className="flex items-start gap-3 rounded-xl border border-[#e5e3dd] bg-[#f8f7f5] px-4 py-3.5">
+        <input
+          type="checkbox"
+          name="consent"
+          id="estimate-form-consent"
+          required
+          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#C9A84C]"
+        />
+        <label htmlFor="estimate-form-consent" className="text-xs leading-relaxed text-navy/60">
+          J&apos;accepte que mes données soient utilisées dans le cadre de ma demande conformément à la{" "}
+          <a
+            href="/politique-confidentialite"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#C9A84C] underline underline-offset-2 transition hover:text-[#b8962e]"
+          >
+            politique de confidentialité
+          </a>. <span className="text-[#C9A84C]">*</span>
+        </label>
+      </div>
+
       <button
         type="submit"
         disabled={status === "loading"}
