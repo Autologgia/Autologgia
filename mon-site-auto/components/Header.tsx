@@ -138,7 +138,7 @@ export default function Header() {
         </div>
 
         {/* Liens de navigation */}
-        <nav className="flex flex-col px-6 pt-4">
+        <nav className="flex flex-col px-6 pt-2">
           {NAV_LINKS.map(({ href, label }) => {
             const active = isActive(pathname, href);
             return (
@@ -146,12 +146,12 @@ export default function Header() {
                 key={href}
                 href={href}
                 onClick={close}
-                className={`flex items-center justify-between border-b border-white/5 py-4 text-base transition hover:text-white ${
-                  active ? "text-white" : "text-gray-300"
+                className={`flex items-center justify-between border-b border-white/8 py-5 text-lg font-semibold tracking-[0.01em] transition hover:text-white ${
+                  active ? "text-white" : "text-gray-200"
                 }`}
               >
                 {label}
-                {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#C9A84C]" />}
+                {active && <span className="h-2 w-2 shrink-0 rounded-full bg-[#C9A84C]" />}
               </a>
             );
           })}

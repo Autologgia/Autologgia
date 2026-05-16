@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Car } from "@/lib/types";
+import { getCarPriceValue, parseNumericValue } from "@/lib/format";
 import VehicleCard from "./VehicleCard";
 
 const STATUS_OPTIONS = [
@@ -51,11 +52,6 @@ function getStatusPriority(status?: string): number {
   return STATUS_PRIORITY[normalizeStatus(status)] ?? 4;
 }
 
-function parsePrice(price?: string): number {
-  if (!price) return 0;
-  return parseInt(price.replace(/\D/g, ""), 10) || 0;
-}
-
 const selectClass =
   "w-full rounded-xl border border-[#071A2D]/40 bg-white pl-4 pr-10 py-3 text-sm text-[#071A2D] outline-none transition focus:border-[#C9A84C]/60 appearance-none cursor-pointer md:w-auto";
 
@@ -67,11 +63,28 @@ export default function VehicleGrid({ cars }: { cars: Car[] }) {
   const [sort, setSort] = useState("defaut");
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [forceRevealCards, setForceRevealCards] = useState(false);
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem("autologgia-favorites");
       if (saved) setFavorites(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      const navigation = performance.getEntriesByType("navigation")[0] as
+        | PerformanceNavigationTiming
+        | undefined;
+      const isBackNavigation = navigation?.type === "back_forward";
+      const isReturningFromVehicle =
+        sessionStorage.getItem("autologgia-returning-from-vehicle") === "1";
+
+      if (isBackNavigation || isReturningFromVehicle) {
+        setForceRevealCards(true);
+        sessionStorage.removeItem("autologgia-returning-from-vehicle");
+      }
     } catch {}
   }, []);
 
@@ -142,13 +155,13 @@ export default function VehicleGrid({ cars }: { cars: Car[] }) {
         case "ancien":
           return bi - ai;
         case "prix_asc":
-          return (a.numericPrice ?? parsePrice(a.price)) - (b.numericPrice ?? parsePrice(b.price));
+          return (getCarPriceValue(a.numericPrice, a.price) ?? 0) - (getCarPriceValue(b.numericPrice, b.price) ?? 0);
         case "prix_desc":
-          return (b.numericPrice ?? parsePrice(b.price)) - (a.numericPrice ?? parsePrice(a.price));
+          return (getCarPriceValue(b.numericPrice, b.price) ?? 0) - (getCarPriceValue(a.numericPrice, a.price) ?? 0);
         case "annee_asc":
-          return Number(a.year) - Number(b.year);
+          return (parseNumericValue(a.year) ?? 0) - (parseNumericValue(b.year) ?? 0);
         case "annee_desc":
-          return Number(b.year) - Number(a.year);
+          return (parseNumericValue(b.year) ?? 0) - (parseNumericValue(a.year) ?? 0);
         default: {
           const statusDiff = getStatusPriority(a.status) - getStatusPriority(b.status);
           return statusDiff !== 0 ? statusDiff : ai - bi;
@@ -168,7 +181,7 @@ export default function VehicleGrid({ cars }: { cars: Car[] }) {
 
   return (
     <div>
-      {/* Search bar */}
+      {/* Search bar — */}
       <div className="relative mb-4">
         <svg
           className="absolute left-4 top-1/2 -translate-y-1/2 text-[#071A2D]/40"
@@ -350,16 +363,79 @@ export default function VehicleGrid({ cars }: { cars: Car[] }) {
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {processedCars.map((car) => (
-            <VehicleCard
+          {processedCars.map((car, i) => (
+            <AnimatedVehicleCard
               key={car.slug}
               car={car}
+              gridIndex={i}
               isFavorite={favorites.includes(car.slug)}
               onToggleFavorite={toggleFavorite}
+              forceVisible={forceRevealCards}
             />
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Scroll-reveal wrapper ──────────────────────────────────────────────────
+// Desktop: cards in the same row (3 columns) stagger left→right (0 / 100 / 200 ms).
+// Mobile : each card triggers individually with no stagger.
+// The delay is read once at mount via matchMedia, stored in a ref so it's
+// stable even if the component re-renders before becoming visible.
+function AnimatedVehicleCard({
+  car,
+  gridIndex,
+  isFavorite,
+  onToggleFavorite,
+  forceVisible,
+}: {
+  car: Car;
+  gridIndex: number;
+  isFavorite: boolean;
+  onToggleFavorite: (slug: string) => void;
+  forceVisible: boolean;
+}) {
+  const wrapRef  = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  const delayRef = useRef(0);
+
+  useEffect(() => {
+    if (forceVisible) {
+      setVisible(true);
+      return;
+    }
+
+    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+    delayRef.current = isDesktop ? (gridIndex % 3) * 100 : 0;
+
+    const el = wrapRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); io.disconnect(); } },
+      { threshold: 0.06, rootMargin: "0px 0px -24px 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [forceVisible, gridIndex]);
+
+  return (
+    <div
+      ref={wrapRef}
+      style={{
+        opacity:   visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(28px)",
+        transition: visible
+          ? `opacity 0.55s ease ${delayRef.current}ms, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${delayRef.current}ms`
+          : "none",
+      }}
+    >
+      <VehicleCard
+        car={car}
+        isFavorite={isFavorite}
+        onToggleFavorite={onToggleFavorite}
+      />
     </div>
   );
 }

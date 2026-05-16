@@ -11,12 +11,12 @@ export type SanityImage = {
 export type Car = {
   name: string;
   slug: string;
-  price: string;
-  year: number;
-  mileage: string;
+  price?: string | number;
+  year: string | number;
+  mileage: string | number;
   transmission: string;
   fuel: string;
-  power: string;
+  power: string | number;
   images: SanityImage[];
   description?: PortableTextBlock[] | string;
   status?: string;
@@ -26,7 +26,7 @@ export type Car = {
   brand?: string;
   model?: string;
   category?: string;
-  numericPrice?: number;
+  numericPrice?: number | string;
   historyText?: PortableTextBlock[] | string;
   historyFile?: { asset: { url: string } };
 };

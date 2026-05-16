@@ -1,4 +1,5 @@
 import { client, urlFor } from "@/lib/sanity";
+import { formatCarPrice, formatMileage, formatPower } from "@/lib/format";
 import Link from "next/link";
 import VehicleGallery from "@/components/VehicleGallery";
 import AccordionSection from "@/components/AccordionSection";
@@ -22,18 +23,19 @@ const STATUS_MAP: Record<string, { label: string; classes: string }> = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const car = await client.fetch(
-    `*[_type == "car" && slug.current == $slug][0]{ name, price, description }`,
+    `*[_type == "car" && slug.current == $slug][0]{ name, price, numericPrice, description }`,
     { slug }
   );
 
   if (!car) return { title: "Véhicule – Autologgia" };
 
   const plainDesc = ptToPlainText(car.description);
+  const formattedPrice = formatCarPrice(car.numericPrice, car.price);
   return {
     title: `${car.name} – Autologgia`,
     description:
       plainDesc ||
-      `${car.name} disponible chez Autologgia. Prix : ${car.price}. Contactez-nous pour plus d'informations.`,
+      `${car.name} disponible chez Autologgia. Prix : ${formattedPrice}. Contactez-nous pour plus d'informations.`,
   };
 }
 
@@ -44,6 +46,7 @@ export default async function VehiclePage({ params }: Props) {
     `*[_type == "car" && slug.current == $slug][0]{
       name,
       price,
+      numericPrice,
       year,
       mileage,
       transmission,
@@ -88,6 +91,7 @@ export default async function VehiclePage({ params }: Props) {
     ) || [];
 
   const statusInfo = car.status ? (STATUS_MAP[car.status] ?? null) : null;
+  const formattedPrice = formatCarPrice(car.numericPrice, car.price);
   const descriptionPlain = ptToPlainText(car.description);
   const descriptionPreview = descriptionPlain
     ? descriptionPlain.slice(0, 280).trim() + (descriptionPlain.length > 280 ? "…" : "")
@@ -142,16 +146,16 @@ export default async function VehiclePage({ params }: Props) {
 
               {/* Prix — blanc sur fond dark */}
               <p className="mt-4 font-heading text-3xl font-light text-white">
-                {car.price}
+                {formattedPrice}
               </p>
 
               {/* Specs — bulles blanches avec texte navy */}
               <div className="mt-8 grid grid-cols-2 gap-3">
                 <Spec label="Année" value={car.year} />
-                <Spec label="Kilométrage" value={car.mileage} />
+                <Spec label="Kilométrage" value={formatMileage(car.mileage)} />
                 <Spec label="Transmission" value={car.transmission} />
                 <Spec label="Carburant" value={car.fuel} />
-                <Spec label="Puissance" value={car.power} />
+                <Spec label="Puissance" value={formatPower(car.power)} />
                 <Spec label="Crit'air" value={car.critAir ?? "Non renseigné"} />
               </div>
 

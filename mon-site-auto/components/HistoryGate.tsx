@@ -80,94 +80,101 @@ export default function HistoryGate({ carName, historyText, historyFileUrl }: Pr
     );
   }
 
-  // ── Verrouillé ──
-  if (phase === "locked") {
+  // ── Verrouillé + Formulaire (même conteneur, formulaire animé) ──
+  if (phase === "locked" || phase === "form") {
+    const formOpen = phase === "form";
     return (
       <div className="rounded-2xl border border-navy/10 bg-navy px-8 py-8">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+
+        {/* En-tête fixe — bouton CTA disparaît quand le formulaire s'ouvre */}
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-heading text-xl font-light text-white">Historique du véhicule</h2>
             <p className="mt-2 max-w-md text-sm leading-relaxed text-gray-400">
               Accédez à l&apos;historique complet de ce véhicule en laissant vos coordonnées.
-              Notre équipe vous confirme l&apos;accès rapidement.
             </p>
           </div>
-          <button
-            onClick={() => setPhase("form")}
-            className="shrink-0 rounded-full bg-[#C9A84C] px-7 py-3 text-sm font-semibold text-white transition hover:bg-[#b8962e]"
+          <div
+            aria-hidden={formOpen}
+            style={{
+              flexShrink: 0,
+              opacity: formOpen ? 0 : 1,
+              transform: formOpen ? "scale(0.94)" : "scale(1)",
+              pointerEvents: formOpen ? "none" : "auto",
+              transition: "opacity 0.22s ease, transform 0.22s ease",
+            }}
           >
-            Accéder à l&apos;historique →
-          </button>
+            <button
+              onClick={() => setPhase("form")}
+              className="rounded-full bg-[#C9A84C] px-7 py-3 text-sm font-semibold text-white transition hover:bg-[#b8962e]"
+            >
+              Accéder à l&apos;historique →
+            </button>
+          </div>
         </div>
-      </div>
-    );
-  }
 
-  // ── Formulaire ──
-  if (phase === "form") {
-    return (
-      <div className="rounded-2xl border border-navy/10 bg-navy px-8 py-8">
-        <h2 className="font-heading text-xl font-light text-white">Historique du véhicule</h2>
-        <p className="mt-1 text-sm text-gray-400">
-          Laissez vos coordonnées pour accéder à l&apos;historique complet.
-        </p>
+        {/* Formulaire animé — grid-template-rows */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateRows: formOpen ? "1fr" : "0fr",
+            transition: "grid-template-rows 0.45s cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
+          <div style={{ overflow: "hidden", minHeight: 0 }}>
+            <div
+              style={{
+                opacity: formOpen ? 1 : 0,
+                transition: formOpen ? "opacity 0.3s ease 0.15s" : "opacity 0.18s ease",
+              }}
+            >
+              <p className="mt-6 text-sm text-gray-400">
+                Laissez vos coordonnées pour accéder à l&apos;historique complet.
+              </p>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          {formStatus === "error" && (
-            <div className="rounded-xl border border-red-500/30 bg-red-950/20 px-4 py-3 text-sm text-red-400">
-              {errorMessage}
+              <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+                {formStatus === "error" && (
+                  <div className="rounded-xl border border-red-500/30 bg-red-950/20 px-4 py-3 text-sm text-red-400">
+                    {errorMessage}
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300">Nom complet *</label>
+                  <input type="text" name="name" required className={inputCls} placeholder="Votre nom" />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300">Téléphone *</label>
+                  <input type="tel" name="phone" required className={inputCls} placeholder="+33 6 00 00 00 00" />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300">Email</label>
+                  <input type="email" name="email" className={inputCls} placeholder="votre@email.com (optionnel)" />
+                </div>
+
+                <div className="flex gap-3 pb-1 pt-2">
+                  <button
+                    type="submit"
+                    disabled={formStatus === "loading"}
+                    className="flex-1 rounded-full bg-[#C9A84C] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#b8962e] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {formStatus === "loading" ? "Envoi…" : "Accéder à l'historique"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPhase("locked")}
+                    className="rounded-full border border-white/15 px-5 py-3 text-sm text-gray-400 transition hover:border-white/30 hover:text-white"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </form>
             </div>
-          )}
-
-          <div>
-            <label className="text-sm font-medium text-gray-300">Nom complet *</label>
-            <input
-              type="text"
-              name="name"
-              required
-              className={inputCls}
-              placeholder="Votre nom"
-            />
           </div>
+        </div>
 
-          <div>
-            <label className="text-sm font-medium text-gray-300">Téléphone *</label>
-            <input
-              type="tel"
-              name="phone"
-              required
-              className={inputCls}
-              placeholder="+33 6 00 00 00 00"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-300">Email</label>
-            <input
-              type="email"
-              name="email"
-              className={inputCls}
-              placeholder="votre@email.com (optionnel)"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={formStatus === "loading"}
-              className="flex-1 rounded-full bg-[#C9A84C] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#b8962e] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {formStatus === "loading" ? "Envoi…" : "Accéder à l'historique"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPhase("locked")}
-              className="rounded-full border border-white/15 px-5 py-3 text-sm text-gray-400 transition hover:border-white/30 hover:text-white"
-            >
-              Annuler
-            </button>
-          </div>
-        </form>
       </div>
     );
   }

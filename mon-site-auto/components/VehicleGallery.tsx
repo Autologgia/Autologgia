@@ -1,11 +1,13 @@
 "use client";
 
+import type { PointerEvent as ReactPointerEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 const AUTOPLAY_MS = 4000;
 const MOBILE_THUMB_COUNT = 4;
 const DESKTOP_THUMB_COUNT = 6;
+const THUMB_DRAG_INTENT_PX = 6;
 
 function getThumbnailStart(index: number, visibleCount: number, total: number) {
   return Math.min(Math.max(index - (visibleCount - 1), 0), Math.max(total - visibleCount, 0));
@@ -313,6 +315,7 @@ function ThumbnailRail({
   const containerRef = useRef<HTMLDivElement>(null);
   const dragStartXRef = useRef<number | null>(null);
   const didDragRef = useRef(false);
+  const activePointerIdRef = useRef<number | null>(null);
   const resumeTimerRef = useRef<number | null>(null);
   const suppressClickRef = useRef(false);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -358,8 +361,16 @@ function ThumbnailRail({
     }, delay);
   };
 
-  const finishDrag = () => {
-    if (dragStartXRef.current === null || !onStartIndexChange) return;
+  const finishDrag = (event?: ReactPointerEvent<HTMLDivElement>) => {
+    if (activePointerIdRef.current !== null && event?.currentTarget.hasPointerCapture(activePointerIdRef.current)) {
+      event.currentTarget.releasePointerCapture(activePointerIdRef.current);
+    }
+
+    if (dragStartXRef.current === null || !onStartIndexChange) {
+      activePointerIdRef.current = null;
+      return;
+    }
+
     const movedSlots = itemStep > 0
       ? (Math.abs(dragOffset) > 18 ? Math.sign(-dragOffset) * Math.max(1, Math.round(Math.abs(dragOffset) / itemStep)) : 0)
       : 0;
@@ -377,6 +388,7 @@ function ThumbnailRail({
     onStartIndexChange(nextStart);
     dragStartXRef.current = null;
     didDragRef.current = false;
+    activePointerIdRef.current = null;
     setDragOffset(0);
     setIsDragging(false);
     resumeRailAutoplay();
@@ -403,15 +415,22 @@ function ThumbnailRail({
         if (!onStartIndexChange || maxStartIndex === 0) return;
         pauseRailAutoplay();
         dragStartXRef.current = event.clientX;
+        activePointerIdRef.current = event.pointerId;
         didDragRef.current = false;
-        setIsDragging(true);
-        event.currentTarget.setPointerCapture(event.pointerId);
       }}
       onPointerMove={(event) => {
-        if (dragStartXRef.current === null) return;
-        event.preventDefault();
+        if (dragStartXRef.current === null || activePointerIdRef.current !== event.pointerId) return;
         const nextOffset = event.clientX - dragStartXRef.current;
-        if (Math.abs(nextOffset) > 4) didDragRef.current = true;
+
+        if (!didDragRef.current && Math.abs(nextOffset) < THUMB_DRAG_INTENT_PX) return;
+
+        if (!didDragRef.current) {
+          didDragRef.current = true;
+          setIsDragging(true);
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }
+
+        event.preventDefault();
         const minOffset = -maxStartIndex * itemStep - -startIndex * itemStep;
         const maxOffset = startIndex * itemStep;
         setDragOffset(Math.min(Math.max(nextOffset, minOffset), maxOffset));

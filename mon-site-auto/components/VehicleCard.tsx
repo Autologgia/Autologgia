@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { urlFor } from "@/lib/sanity";
 import type { Car } from "@/lib/types";
+import { formatCarPrice, formatMileage, formatPower } from "@/lib/format";
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string }> = {
   disponible:     { label: "Disponible",       bg: "bg-emerald-500" },
@@ -34,6 +36,15 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite }: Props
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const statusInfo = car.status ? (STATUS_CONFIG[car.status] ?? null) : null;
   const hasMultipleImages = imageUrls.length > 1;
+  const formattedPrice = formatCarPrice(car.numericPrice, car.price);
+  const formattedMileage = formatMileage(car.mileage);
+  const formattedPower = formatPower(car.power);
+
+  function markVehicleNavigation() {
+    try {
+      sessionStorage.setItem("autologgia-returning-from-vehicle", "1");
+    } catch {}
+  }
 
   // Détecte mobile ET prefers-reduced-motion (identique à l'existant)
   useEffect(() => {
@@ -141,10 +152,10 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite }: Props
       <div className="flex flex-1 flex-col p-5">
         <h3 className="font-heading text-xl font-medium text-white leading-snug">{car.name}</h3>
         <p className="mt-1 text-sm text-gray-400">
-          {car.year} · {car.mileage}
+          {car.year}{formattedMileage ? ` · ${formattedMileage}` : ''}
         </p>
-        {car.price && (
-          <p className="mt-2 font-heading text-lg font-semibold text-white">{car.price}</p>
+        {formattedPrice && (
+          <p className="mt-2 font-heading text-lg font-semibold text-white">{formattedPrice}</p>
         )}
 
         {/* Specs */}
@@ -159,27 +170,28 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite }: Props
               {car.fuel}
             </span>
           )}
-          {car.power && (
+          {formattedPower && (
             <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-gray-400">
-              {car.power}
+              {formattedPower}
             </span>
           )}
         </div>
 
         {/* CTAs */}
         <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
-          <a
+          <Link
             href={`/vehicules/${car.slug}`}
+            onClick={markVehicleNavigation}
             className="rounded-full border border-white/20 px-3 py-2.5 text-center text-sm font-medium text-white transition hover:border-white/50 hover:bg-white/5"
           >
             Voir
-          </a>
-          <a
+          </Link>
+          <Link
             href={`/contact?vehicule=${encodeURIComponent(car.name)}`}
             className="rounded-full bg-[#C9A84C] px-3 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-[#b8962e]"
           >
             Contacter
-          </a>
+          </Link>
         </div>
       </div>
     </div>

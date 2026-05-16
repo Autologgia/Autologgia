@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RecentVehiclesGrid from "@/components/RecentVehiclesGrid";
 import HomepageContactForm from "@/components/HomepageContactForm";
+import SplashScreen from "@/components/SplashScreen";
 import type { Car } from "@/lib/types";
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default async function Home() {
       name,
       "slug": slug.current,
       price,
+      numericPrice,
       year,
       mileage,
       transmission,
@@ -31,6 +33,8 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen">
+
+      <SplashScreen />
 
       <Header />
 

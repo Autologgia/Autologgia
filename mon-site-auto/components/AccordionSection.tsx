@@ -46,12 +46,27 @@ export default function AccordionSection({
         </span>
       </button>
 
-      {/* Contenu déplié — fond blanc, texte navy */}
-      {isOpen && (
-        <div className="bg-white px-8 pb-8 pt-6 text-[#071A2D]">
-          {children}
+      {/* Contenu — animé via grid-template-rows (supporte height:auto) */}
+      <div
+        aria-hidden={!isOpen}
+        style={{
+          display: "grid",
+          gridTemplateRows: isOpen ? "1fr" : "0fr",
+          transition: "grid-template-rows 0.42s cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
+      >
+        <div style={{ overflow: "hidden", minHeight: 0 }}>
+          <div
+            className="bg-white px-8 pb-8 pt-6 text-[#071A2D]"
+            style={{
+              opacity: isOpen ? 1 : 0,
+              transition: isOpen ? "opacity 0.28s ease 0.1s" : "opacity 0.18s ease",
+            }}
+          >
+            {children}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
