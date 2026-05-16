@@ -8,6 +8,7 @@ import PortableTextContent, { ptToPlainText } from "@/components/PortableTextCon
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import type { Metadata } from "next";
+import type { SanityImageSource } from "@sanity/image-url";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -86,7 +87,7 @@ export default async function VehiclePage({ params }: Props) {
   }
 
   const imageUrls =
-    car.images?.map((img: unknown) =>
+    car.images?.map((img: SanityImageSource) =>
       urlFor(img).width(1400).height(900).url()
     ) || [];
 
