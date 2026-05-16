@@ -19,6 +19,7 @@ export default function RecentVehiclesGrid({ cars }: { cars: Car[] }) {
   const [pressAnim, setPressAnim]       = useState(false);
   const [isDragging, setIsDragging]     = useState(false);
   const [isInteractive, setIsInteractive] = useState(false);
+  const [carouselDims, setCarouselDims] = useState({ cardW: 360, offset: 333 });
 
   const gridRef       = useRef<HTMLDivElement>(null);
   const autoplayRef   = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -47,6 +48,19 @@ export default function RecentVehiclesGrid({ cars }: { cars: Car[] }) {
     const onChange = () => setReducedMotion(mq.matches);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  // ── Dimensions du carousel : tablettes (< 1024px) vs desktop ──────────────
+  useEffect(() => {
+    function update() {
+      setCarouselDims(window.innerWidth < 1024
+        ? { cardW: 260, offset: 200 }
+        : { cardW: 360, offset: 333 }
+      );
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
   // ── IntersectionObserver (fade-in) ─────────────────────────────────────────
@@ -204,9 +218,11 @@ export default function RecentVehiclesGrid({ cars }: { cars: Car[] }) {
         filter: "none",
       };
     }
+    const { offset, cardW } = carouselDims;
+    const isCompact = cardW < 360;
     const side = pos === "right" ? 1 : -1;
     return {
-      transform: `translateX(calc(-50% + ${side * 333}px)) translateZ(-130px) rotateY(${-side * 18}deg) scale(0.85)`,
+      transform: `translateX(calc(-50% + ${side * offset}px)) translateZ(${isCompact ? -90 : -130}px) rotateY(${-side * (isCompact ? 14 : 18)}deg) scale(${isCompact ? 0.82 : 0.85})`,
       opacity: 0.72,
       zIndex: 2,
       filter: "brightness(0.68) saturate(0.85)",
@@ -222,7 +238,7 @@ export default function RecentVehiclesGrid({ cars }: { cars: Car[] }) {
       position: "absolute",
       top: 0,
       left: "50%",
-      width: "360px",
+      width: `${carouselDims.cardW}px`,
       willChange: "transform, opacity",
       // Suppress transition while the CSS animation runs to avoid fighting it
       transition: reducedMotion || useAnim
@@ -255,7 +271,7 @@ export default function RecentVehiclesGrid({ cars }: { cars: Car[] }) {
       `}</style>
 
       {/* ── Mobile + fallback grid (inchangé) ─────────────────────── */}
-      <div className={`grid gap-6 sm:grid-cols-2 ${n >= 3 ? "lg:hidden" : ""}`}>
+      <div className={`grid gap-6 sm:grid-cols-2 ${n >= 3 ? "md:hidden" : ""}`}>
         {cars.map((car, i) => (
           <div
             key={car.slug}
@@ -273,7 +289,7 @@ export default function RecentVehiclesGrid({ cars }: { cars: Car[] }) {
 
       {/* ── Desktop 3D carousel (≥ 3 véhicules, ≥ lg) ────────────── */}
       {n >= 3 && (
-        <div className="hidden lg:block">
+        <div className="hidden md:block">
 
           {/* Stage 3D */}
           <div

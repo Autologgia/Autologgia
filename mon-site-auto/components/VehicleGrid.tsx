@@ -371,6 +371,7 @@ export default function VehicleGrid({ cars }: { cars: Car[] }) {
               isFavorite={favorites.includes(car.slug)}
               onToggleFavorite={toggleFavorite}
               forceVisible={forceRevealCards}
+              priority={i === 0}
             />
           ))}
         </div>
@@ -390,12 +391,14 @@ function AnimatedVehicleCard({
   isFavorite,
   onToggleFavorite,
   forceVisible,
+  priority = false,
 }: {
   car: Car;
   gridIndex: number;
   isFavorite: boolean;
   onToggleFavorite: (slug: string) => void;
   forceVisible: boolean;
+  priority?: boolean;
 }) {
   const wrapRef  = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -435,6 +438,7 @@ function AnimatedVehicleCard({
         car={car}
         isFavorite={isFavorite}
         onToggleFavorite={onToggleFavorite}
+        priority={priority}
       />
     </div>
   );

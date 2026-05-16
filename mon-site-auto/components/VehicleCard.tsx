@@ -21,9 +21,10 @@ interface Props {
   car: Car;
   isFavorite: boolean;
   onToggleFavorite: (slug: string) => void;
+  priority?: boolean;
 }
 
-export default function VehicleCard({ car, isFavorite, onToggleFavorite }: Props) {
+export default function VehicleCard({ car, isFavorite, onToggleFavorite, priority = false }: Props) {
   const imageUrls = useMemo(
     () =>
       (car.images ?? []).map((image) =>
@@ -98,7 +99,8 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite }: Props
                 className={`object-cover transition-opacity duration-700 ease-in-out ${
                   index === currentImageIndex ? "opacity-100" : "opacity-0"
                 }`}
-                sizes="(max-width: 768px) 100vw, 33vw"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                priority={index === 0 && priority}
               />
             ))
           ) : (
@@ -108,7 +110,8 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite }: Props
               alt={car.name}
               fill
               className="object-cover transition duration-700 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, 33vw"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              priority={priority}
             />
           )
         ) : (

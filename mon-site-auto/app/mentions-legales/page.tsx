@@ -48,7 +48,7 @@ export default function MentionsLegalesPage() {
                 <InfoRow label="N° TVA intracommunautaire"   value="FR49989297742" />
                 <InfoRow label="Activité principale"         value="Commerce de voitures et de véhicules automobiles légers – NAF 4511Z" />
                 <InfoRow label="Date de création"            value="12 août 2025" />
-                <InfoRow label="Siège social"                value="11 Chemin des Gourguettes Domaine de l'Abadie, 06150 Cannes, France" />
+                <InfoRow label="Siège social"                value="11B Chemin des Gourguettes, 06150 Cannes" />
               </dl>
             </section>
 
@@ -154,7 +154,7 @@ export default function MentionsLegalesPage() {
               <dl className="space-y-3.5">
                 <InfoRow label="Email"     value="autologgia.web@gmail.com" />
                 <InfoRow label="Téléphone" value="+33 6 64 79 94 24" />
-                <InfoRow label="Adresse"   value="11 Chemin des Gourguettes Domaine de l'Abadie, 06150 Cannes" />
+                <InfoRow label="Adresse"   value="11B Chemin des Gourguettes, 06150 Cannes" />
               </dl>
             </section>
 

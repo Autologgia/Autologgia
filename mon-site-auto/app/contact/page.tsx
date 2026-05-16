@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 // Remplacez cette valeur par l'adresse exacte d'Autologgia.
 // Vous pouvez aussi copier l'URL "Intégrer" directement depuis Google Maps
 // (Partager → Intégrer une carte) et coller le src de l'iframe dans MAPS_EMBED.
-const COMPANY_ADDRESS = "854 Avenue du Campon, 06110 Le Cannet";
+const COMPANY_ADDRESS = "11B Chemin des Gourguettes, 06150 Cannes";
 const MAPS_EMBED = `https://maps.google.com/maps?q=${encodeURIComponent(COMPANY_ADDRESS)}&output=embed`;
 const MAPS_DIRECTIONS = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(COMPANY_ADDRESS)}`;
 // ────────────────────────────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ export default async function ContactPage({
                 Notre localisation
               </h2>
               <p className="mt-4 text-sm leading-6 text-navy/70 sm:text-base">
-                Trouvez-nous facilement au Cannet.
+                Trouvez-nous facilement à Cannes.
               </p>
 
               <div className="mt-8 overflow-hidden rounded-2xl border border-navy/15 shadow-sm">

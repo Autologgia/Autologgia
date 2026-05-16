@@ -39,35 +39,35 @@ export default async function Home() {
       <Header />
 
       {/* ── HERO ── */}
-      <section className="hero-iphone-se relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-20 text-center">
+      <section className="hero-section relative flex flex-col items-center justify-center overflow-hidden px-5 sm:px-6 pt-24 pb-16 text-center">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0B1929] via-[#0B1929] to-[#0a1520]" />
         <div className="absolute left-1/2 top-0 h-40 w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-[#C9A84C]/25 to-transparent" />
 
-        <div className="relative z-10 max-w-4xl">
-          <p className="text-xs font-medium uppercase tracking-[0.5em] text-[#C9A84C]">
+        <div className="relative z-10 w-full max-w-4xl">
+          <p className="hero-eyebrow text-[10px] sm:text-xs font-medium uppercase tracking-[0.35em] sm:tracking-[0.5em] text-[#C9A84C]">
             Automobile premium
           </p>
 
-          <h1 className="mt-6 font-heading text-5xl font-light leading-tight text-white md:text-7xl lg:text-8xl">
+          <h1 className="hero-title mt-4 sm:mt-6 font-heading font-light text-white">
             Véhicules d&apos;exception,{" "}
             <em className="italic">sélectionnés avec exigence</em>
           </h1>
 
-          <p className="mt-8 mx-auto max-w-xl text-lg leading-relaxed text-gray-400">
+          <p className="hero-desc mt-5 sm:mt-8 mx-auto max-w-xl leading-relaxed text-gray-400">
             Achetez, vendez ou estimez votre véhicule avec un accompagnement
             sérieux, transparent et haut de gamme.
           </p>
 
-          <div className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          <div className="hero-ctas mt-8 sm:mt-12 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <a
               href="/catalogue"
-              className="rounded-full bg-[#C9A84C] px-8 py-4 font-semibold text-white transition hover:bg-[#b8962e]"
+              className="w-full max-w-[18rem] sm:w-auto rounded-full bg-[#C9A84C] px-7 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold text-white transition hover:bg-[#b8962e]"
             >
               Voir les véhicules
             </a>
             <a
               href="/estimation"
-              className="rounded-full border border-white/25 px-8 py-4 font-medium text-white transition hover:border-white/50 hover:bg-white/5"
+              className="w-full max-w-[18rem] sm:w-auto rounded-full border border-white/25 px-7 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-medium text-white transition hover:border-white/50 hover:bg-white/5"
             >
               Estimer mon véhicule
             </a>
@@ -75,7 +75,7 @@ export default async function Home() {
         </div>
 
         {/* Desktop: texte + trait */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 hidden flex-col items-center gap-2 text-gray-600 md:flex">
+        <div className="hero-scroll-hint absolute bottom-10 left-1/2 -translate-x-1/2 hidden flex-col items-center gap-2 text-gray-600 md:flex">
           <p className="text-xs uppercase tracking-widest">Découvrir</p>
           <div className="h-8 w-px animate-bounce bg-gradient-to-b from-gray-600 to-transparent" />
         </div>
@@ -83,7 +83,7 @@ export default async function Home() {
         {/* Mobile only: double chevron en cascade */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-0.5 md:hidden"
+          className="pointer-events-none absolute bottom-6 sm:bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-0.5 md:hidden"
         >
           <div className="animate-scroll-chevron motion-reduce:animate-none motion-reduce:opacity-30">
             <svg width="18" height="10" viewBox="0 0 18 10" fill="none" aria-hidden="true">

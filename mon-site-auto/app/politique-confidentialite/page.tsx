@@ -53,7 +53,7 @@ export default function PolitiqueConfidentialitePage() {
               <dl className="mt-6 space-y-3.5">
                 <InfoRow label="Société"   value="FRERES ROUX AUTO" />
                 <InfoRow label="SIREN"     value="989 297 742" />
-                <InfoRow label="Adresse"   value="11 Chemin des Gourguettes Domaine de l'Abadie, 06150 Cannes, France" />
+                <InfoRow label="Adresse"   value="11B Chemin des Gourguettes, 06150 Cannes" />
                 <InfoRow label="Email"     value="autologgia.web@gmail.com" />
                 <InfoRow label="Téléphone" value="+33 6 64 79 94 24" />
               </dl>
@@ -257,7 +257,7 @@ export default function PolitiqueConfidentialitePage() {
               </p>
               <dl className="mt-5 space-y-3.5">
                 <InfoRow label="Email"    value="autologgia.web@gmail.com" />
-                <InfoRow label="Adresse"  value="11 Chemin des Gourguettes Domaine de l'Abadie, 06150 Cannes" />
+                <InfoRow label="Adresse"  value="11B Chemin des Gourguettes, 06150 Cannes" />
               </dl>
             </section>
 
