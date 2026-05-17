@@ -20,18 +20,15 @@ export default function SplashScreen() {
 
     localStorage.setItem(SPLASH_KEY, "1");
     setShow(true);
-    document.body.style.overflow = "hidden";
 
     const t1 = setTimeout(() => setLeaving(true), T_EXIT_START);
     const t2 = setTimeout(() => {
       setShow(false);
-      document.body.style.overflow = "";
     }, T_UNMOUNT);
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
-      document.body.style.overflow = "";
     };
   }, []);
 

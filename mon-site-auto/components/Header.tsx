@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
@@ -48,7 +49,7 @@ export default function Header() {
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <header className="fixed left-0 top-0 z-40 w-full border-b border-white/5 bg-navy/80 backdrop-blur-md">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-1">
-          <a href="/" className="flex items-center">
+          <Link href="/" className="flex items-center">
             <Image
               src="/logo.png"
               alt="Autologgia"
@@ -57,14 +58,14 @@ export default function Header() {
               className="h-20 w-auto object-contain"
               priority
             />
-          </a>
+          </Link>
 
           {/* Desktop nav */}
           <div className="hidden items-center gap-8 text-sm md:flex">
             {NAV_LINKS.map(({ href, label }) => {
               const active = isActive(pathname, href);
               return (
-                <a
+                <Link
                   key={href}
                   href={href}
                   className={`relative pb-1.5 transition-colors duration-200 hover:text-white ${active ? "text-white" : "text-gray-400"}`}
@@ -73,7 +74,7 @@ export default function Header() {
                   <span
                     className={`absolute bottom-0 left-1/2 h-px -translate-x-1/2 rounded-full bg-[#C9A84C] transition-all duration-300 ${active ? "w-full" : "w-0"}`}
                   />
-                </a>
+                </Link>
               );
             })}
           </div>
@@ -117,7 +118,7 @@ export default function Header() {
       >
         {/* En-tête du drawer */}
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-6 py-4">
-          <a href="/" onClick={close}>
+          <Link href="/" onClick={close}>
             <Image
               src="/logo.png"
               alt="Autologgia"
@@ -125,7 +126,7 @@ export default function Header() {
               height={56}
               className="h-12 w-auto object-contain"
             />
-          </a>
+          </Link>
           <button
             onClick={close}
             aria-label="Fermer le menu"
@@ -142,7 +143,7 @@ export default function Header() {
           {NAV_LINKS.map(({ href, label }) => {
             const active = isActive(pathname, href);
             return (
-              <a
+              <Link
                 key={href}
                 href={href}
                 onClick={close}
@@ -152,7 +153,7 @@ export default function Header() {
               >
                 {label}
                 {active && <span className="h-2 w-2 shrink-0 rounded-full bg-[#C9A84C]" />}
-              </a>
+              </Link>
             );
           })}
         </nav>
