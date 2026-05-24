@@ -48,16 +48,16 @@ export default defineType({
 
     defineField({
       name: 'price',
-      title: 'Prix (affiché)',
+      title: 'Prix',
       type: 'string',
-      description: 'Ex : "45 000 €" — valeur affichée sur le site',
+      description: 'Chiffre uniquement — ex : 45000 ou 45 000 (l\'unité € est ajoutée automatiquement sur le site)',
     }),
 
     defineField({
       name: 'numericPrice',
-      title: 'Prix numérique (tri)',
+      title: 'Prix numérique',
       type: 'number',
-      description: 'Entrez le prix en chiffres sans symbole (ex : 45000) — utilisé uniquement pour le tri par prix',
+      description: 'Entrer uniquement le nombre, sans €, exemple : 95000',
     }),
 
     defineField({
@@ -70,6 +70,7 @@ export default defineType({
       name: 'mileage',
       title: 'Kilométrage',
       type: 'string',
+      description: 'Chiffre uniquement — ex : 30000 ou 30 000 (l\'unité km est ajoutée automatiquement)',
     }),
 
     defineField({
@@ -103,6 +104,7 @@ export default defineType({
       name: 'power',
       title: 'Puissance',
       type: 'string',
+      description: 'Chiffre uniquement — ex : 450 (l\'unité ch est ajoutée automatiquement)',
     }),
 
     defineField({

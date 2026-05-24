@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { Metadata } from "next";
-import { client } from "@/lib/sanity";
+import { sanityFetch } from "@/lib/sanity";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RecentVehiclesGrid from "@/components/RecentVehiclesGrid";
@@ -14,8 +14,10 @@ export const metadata: Metadata = {
     "Achetez, vendez ou estimez votre véhicule premium avec Autologgia. Sélection rigoureuse, transparence totale, accompagnement personnalisé.",
 };
 
+export const revalidate = 60;
+
 export default async function Home() {
-  const cars: Car[] = await client.fetch(`
+  const cars = await sanityFetch<Car[]>(`
     *[_type == "car"] | order(_createdAt desc) [0..2] {
       name,
       "slug": slug.current,
@@ -26,7 +28,7 @@ export default async function Home() {
       transmission,
       fuel,
       power,
-      images,
+      "images": images[defined(asset)],
       status
     }
   `);

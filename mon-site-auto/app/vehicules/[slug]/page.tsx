@@ -1,4 +1,4 @@
-import { client, urlFor } from "@/lib/sanity";
+import { sanityFetch, urlFor } from "@/lib/sanity";
 import { formatCarPrice, formatMileage, formatPower } from "@/lib/format";
 import Link from "next/link";
 import VehicleGallery from "@/components/VehicleGallery";
@@ -9,8 +9,12 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import type { Metadata } from "next";
 import type { SanityImageSource } from "@sanity/image-url";
+import type { Car } from "@/lib/types";
 
 type Props = { params: Promise<{ slug: string }> };
+
+export const revalidate = 60;
+export const dynamicParams = true;
 
 const STATUS_MAP: Record<string, { label: string; classes: string }> = {
   disponible:     { label: "Disponible",     classes: "bg-emerald-500/15 text-emerald-600" },
@@ -23,7 +27,9 @@ const STATUS_MAP: Record<string, { label: string; classes: string }> = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const car = await client.fetch(
+  const car = await sanityFetch<
+    Pick<Car, "name" | "price" | "numericPrice" | "description">
+  >(
     `*[_type == "car" && slug.current == $slug][0]{ name, price, numericPrice, description }`,
     { slug }
   );
@@ -43,7 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function VehiclePage({ params }: Props) {
   const { slug } = await params;
 
-  const car = await client.fetch(
+  const car = await sanityFetch<Car>(
     `*[_type == "car" && slug.current == $slug][0]{
       name,
       price,
@@ -53,7 +59,7 @@ export default async function VehiclePage({ params }: Props) {
       transmission,
       fuel,
       power,
-      images,
+      "images": images[defined(asset)],
       description,
       status,
       location,
@@ -203,10 +209,10 @@ export default async function VehiclePage({ params }: Props) {
             )}
 
             {/* Options & équipements */}
-            {car.options?.length > 0 && (
+            {(car.options?.length ?? 0) > 0 && (
               <AccordionSection title="Options & équipements">
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  {car.options.map((option: string, i: number) => (
+                  {car.options?.map((option: string, i: number) => (
                     <div
                       key={i}
                       className="flex items-center gap-2 rounded-xl border border-[#071A2D]/15 bg-[#071A2D]/5 px-4 py-3 text-sm text-[#071A2D]"

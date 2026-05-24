@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { client } from "@/lib/sanity";
+import { sanityFetch } from "@/lib/sanity";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import VehicleGrid from "@/components/VehicleGrid";
@@ -11,8 +11,10 @@ export const metadata: Metadata = {
     "Parcourez l'ensemble des véhicules premium disponibles chez Autologgia. Filtrez par marque, catégorie, statut et prix.",
 };
 
+export const revalidate = 60;
+
 export default async function CataloguePage() {
-  const cars: Car[] = await client.fetch(`
+  const cars = await sanityFetch<Car[]>(`
     *[_type == "car"] | order(_createdAt desc) {
       name,
       "slug": slug.current,
@@ -23,7 +25,7 @@ export default async function CataloguePage() {
       transmission,
       fuel,
       power,
-      images,
+      "images": images[defined(asset)],
       status,
       brand,
       model
