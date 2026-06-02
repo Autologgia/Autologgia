@@ -18,16 +18,6 @@ export const client = createClient({
   perspective: "published",
 });
 
-// Used only in API routes to create documents (estimation leads, etc.)
-// Requires SANITY_WRITE_TOKEN in .env.local
-export const writeClient = createClient({
-  projectId,
-  dataset,
-  apiVersion,
-  useCdn: false,
-  token: process.env.SANITY_WRITE_TOKEN,
-});
-
 export function sanityFetch<T>(query: string, params: QueryParams = {}) {
   return client.fetch<T>(query, params, {
     next: { revalidate: SANITY_REVALIDATE_SECONDS },

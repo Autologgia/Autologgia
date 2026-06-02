@@ -26,4 +26,10 @@
 *.tsbuildinfo
 
 # Dotenv and similar local-only files
+.env
+.env.local
+.env*.local
 *.local
+
+# Vercel local project metadata
+.vercel

@@ -1,116 +1,215 @@
 import { Resend } from "resend";
-import { writeClient } from "@/lib/sanity";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { sanityWriteToken, writeClient } from "@/lib/sanity-write";
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
 const TO = "autologgia.web@gmail.com";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[0-9+().\-\s]{6,30}$/;
+const MAX_BODY_BYTES = 18 * 1024 * 1024;
+const MAX_PHOTOS = 4;
+const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
+const ALLOWED_FIELDS = new Set([
+  "brand",
+  "model",
+  "year",
+  "mileage",
+  "power",
+  "fuel",
+  "transmission",
+  "version",
+  "etat",
+  "localisation",
+  "phone",
+  "email",
+  "message",
+  "website",
+  "photos",
+]);
+const ALLOWED_FUELS = new Set(["essence", "diesel", "hybride", "electrique"]);
+const ALLOWED_TRANSMISSIONS = new Set(["automatique", "manuelle"]);
+const ALLOWED_ETATS = new Set(["excellent", "bon", "correct", "a_reviser"]);
+const ALLOWED_PHOTO_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
 
 type PhotoData = { filename: string; content: string };
+type Attachment = { filename: string; content: Buffer };
+
+function jsonError(message: string, status = 400) {
+  return Response.json({ success: false, error: message }, { status });
+}
+
+function cleanSingleLine(value: unknown, max: number) {
+  if (typeof value !== "string") return "";
+  return value.replace(/[\r\n\t\0]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+function cleanText(value: unknown, max: number) {
+  if (typeof value !== "string") return "";
+  return value.replace(/\0/g, "").trim().slice(0, max);
+}
+
+function hasOnlyAllowedFields(body: Record<string, unknown>) {
+  return Object.keys(body).every((key) => ALLOWED_FIELDS.has(key));
+}
+
+function parsePositiveInt(value: string) {
+  if (!/^\d+$/.test(value)) return NaN;
+  return Number(value);
+}
+
+function sanitizeFilename(filename: unknown) {
+  const cleaned = cleanSingleLine(filename, 120).replace(/[\\/]/g, "_");
+  const extension = cleaned.split(".").pop()?.toLowerCase() ?? "";
+  if (!cleaned || !ALLOWED_PHOTO_EXTENSIONS.has(extension)) return "";
+  return cleaned;
+}
+
+function buildAttachments(photos: unknown): Attachment[] {
+  if (!Array.isArray(photos)) return [];
+
+  const attachments: Attachment[] = [];
+  for (const photo of photos.slice(0, MAX_PHOTOS)) {
+    if (!photo || typeof photo !== "object" || Array.isArray(photo)) continue;
+    const { filename, content } = photo as Partial<PhotoData>;
+    const safeFilename = sanitizeFilename(filename);
+    if (!safeFilename || typeof content !== "string") continue;
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(content)) continue;
+
+    try {
+      const buffer = Buffer.from(content, "base64");
+      if (buffer.length === 0 || buffer.length > MAX_PHOTO_BYTES) continue;
+      attachments.push({ filename: safeFilename, content: buffer });
+    } catch {
+      // Ignore malformed photos.
+    }
+  }
+
+  return attachments;
+}
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const {
-    brand,
-    model,
-    year,
-    mileage,
-    power,
-    fuel,
-    transmission,
-    version,
-    etat,
-    localisation,
-    phone,
-    email,
-    message,
-    website,
-    photos,
-  } = body as Record<string, string> & { photos?: PhotoData[] };
+  if (!checkRateLimit(req, "estimation", 6, 10 * 60 * 1000)) {
+    return jsonError("Trop de demandes. Reessayez plus tard.", 429);
+  }
 
-  // Honeypot: bots fill this field, humans don't
+  const contentLength = Number(req.headers.get("content-length") ?? "0");
+  if (contentLength > MAX_BODY_BYTES) {
+    return jsonError("Demande trop volumineuse.", 413);
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError("Requete invalide.");
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return jsonError("Requete invalide.");
+  }
+
+  const raw = body as Record<string, unknown>;
+  if (!hasOnlyAllowedFields(raw)) {
+    return jsonError("Requete invalide.");
+  }
+
+  const brand = cleanSingleLine(raw.brand, 80);
+  const model = cleanSingleLine(raw.model, 80);
+  const year = cleanSingleLine(raw.year, 4);
+  const mileage = cleanSingleLine(raw.mileage, 8);
+  const power = cleanSingleLine(raw.power, 4);
+  const fuel = cleanSingleLine(raw.fuel, 30);
+  const transmission = cleanSingleLine(raw.transmission, 30);
+  const version = cleanSingleLine(raw.version, 120);
+  const etat = cleanSingleLine(raw.etat, 30);
+  const localisation = cleanSingleLine(raw.localisation, 120);
+  const phone = cleanSingleLine(raw.phone, 30);
+  const email = cleanSingleLine(raw.email, 120).toLowerCase();
+  const message = cleanText(raw.message, 3000);
+  const website = cleanSingleLine(raw.website, 120);
+
+  // Honeypot: bots fill this field, humans don't.
   if (website) {
     return Response.json({ success: true });
   }
 
-  if (!brand?.trim() || !model?.trim() || !year || !mileage || !power || !fuel?.trim() || !transmission?.trim() || !etat?.trim() || !phone?.trim()) {
-    return Response.json(
-      { success: false, error: "Veuillez remplir tous les champs obligatoires." },
-      { status: 400 }
-    );
+  if (!brand || !model || !year || !mileage || !power || !fuel || !transmission || !etat || !phone) {
+    return jsonError("Veuillez remplir tous les champs obligatoires.");
   }
 
-  if (email?.trim() && !EMAIL_REGEX.test(email)) {
-    return Response.json(
-      { success: false, error: "Adresse email invalide." },
-      { status: 400 }
-    );
+  if (!PHONE_REGEX.test(phone)) {
+    return jsonError("Telephone invalide.");
   }
 
-  const yearNum = Number(year);
-  const mileageNum = Number(mileage);
-  const powerNum = Number(power);
-
-  if (isNaN(yearNum) || isNaN(mileageNum) || isNaN(powerNum) || mileageNum < 0 || powerNum < 1) {
-    return Response.json(
-      { success: false, error: "Année, kilométrage ou puissance invalide." },
-      { status: 400 }
-    );
+  if (email && !EMAIL_REGEX.test(email)) {
+    return jsonError("Adresse email invalide.");
   }
 
-  const ETAT_LABELS: Record<string, string> = {
-    excellent: "Excellent – comme neuf",
-    bon: "Bon – entretenu régulièrement",
-    correct: "Correct – quelques défauts mineurs",
-    a_reviser: "À réviser – nécessite des travaux",
+  const yearNum = parsePositiveInt(year);
+  const mileageNum = parsePositiveInt(mileage);
+  const powerNum = parsePositiveInt(power);
+  const currentYear = new Date().getFullYear();
+
+  if (
+    !Number.isInteger(yearNum) ||
+    !Number.isInteger(mileageNum) ||
+    !Number.isInteger(powerNum) ||
+    yearNum < 1950 ||
+    yearNum > currentYear ||
+    mileageNum < 0 ||
+    mileageNum > 2000000 ||
+    powerNum < 1 ||
+    powerNum > 2000
+  ) {
+    return jsonError("Annee, kilometrage ou puissance invalide.");
+  }
+
+  if (!ALLOWED_FUELS.has(fuel) || !ALLOWED_TRANSMISSIONS.has(transmission) || !ALLOWED_ETATS.has(etat)) {
+    return jsonError("Requete invalide.");
+  }
+
+  const etatLabels: Record<string, string> = {
+    excellent: "Excellent - comme neuf",
+    bon: "Bon - entretenu regulierement",
+    correct: "Correct - quelques defauts mineurs",
+    a_reviser: "A reviser - necessite des travaux",
   };
+  const attachments = buildAttachments(raw.photos);
 
-  // Build attachments from base64 photos (max 4, silently skip invalid)
-  const attachments: { filename: string; content: Buffer }[] = [];
-  if (Array.isArray(photos)) {
-    for (const photo of photos.slice(0, 4)) {
-      try {
-        if (photo.filename && photo.content) {
-          attachments.push({
-            filename: photo.filename,
-            content: Buffer.from(photo.content, "base64"),
-          });
-        }
-      } catch {
-        // skip malformed entry
-      }
-    }
+  if (!process.env.RESEND_API_KEY) {
+    console.error("[api/estimation] missing RESEND_API_KEY");
+    return jsonError("Impossible d'envoyer la demande pour le moment.", 500);
   }
 
-  // Instanciation lazily dans le handler — évite l'erreur au build si la clé est absente
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
     await resend.emails.send({
       from: FROM,
       to: TO,
-      subject: `Nouvelle estimation – ${brand.trim()} ${model.trim()}`,
+      subject: `Nouvelle estimation - ${brand} ${model}`,
       text: [
-        `Nouvelle demande d'estimation`,
-        ``,
-        `── Véhicule ──`,
-        `Marque      : ${brand.trim()}`,
-        `Modèle      : ${model.trim()}`,
-        version?.trim() ? `Version     : ${version.trim()}` : null,
-        `Année       : ${yearNum}`,
-        `Kilométrage : ${mileageNum.toLocaleString("fr-FR")} km`,
+        "Nouvelle demande d'estimation",
+        "",
+        "-- Vehicule --",
+        `Marque      : ${brand}`,
+        `Modele      : ${model}`,
+        version ? `Version     : ${version}` : null,
+        `Annee       : ${yearNum}`,
+        `Kilometrage : ${mileageNum.toLocaleString("fr-FR")} km`,
         `Puissance   : ${powerNum} ch`,
-        `Carburant   : ${fuel.trim()}`,
-        `Transmission: ${transmission.trim()}`,
-        `État        : ${ETAT_LABELS[etat] ?? etat}`,
-        attachments.length > 0 ? `Photos joints: ${attachments.length}` : null,
-        ``,
-        `── Contact ──`,
-        `Téléphone   : ${phone.trim()}`,
-        `Email       : ${email?.trim() || "non renseigné"}`,
-        localisation?.trim() ? `Localisation: ${localisation.trim()}` : null,
-        message?.trim() ? `\nMessage :\n${message.trim()}` : null,
-        ``,
+        `Carburant   : ${fuel}`,
+        `Transmission: ${transmission}`,
+        `Etat        : ${etatLabels[etat] ?? etat}`,
+        attachments.length > 0 ? `Photos jointes: ${attachments.length}` : null,
+        "",
+        "-- Contact --",
+        `Telephone   : ${phone}`,
+        `Email       : ${email || "non renseigne"}`,
+        localisation ? `Localisation: ${localisation}` : null,
+        message ? `\nMessage :\n${message}` : null,
+        "",
         `Date : ${new Date().toLocaleString("fr-FR")}`,
       ]
         .filter((line) => line !== null)
@@ -118,35 +217,37 @@ export async function POST(req: Request) {
       ...(attachments.length > 0 ? { attachments } : {}),
     });
   } catch (error) {
-    console.error("[api/estimation] email error:", error);
-    return Response.json(
-      { success: false, error: "Une erreur est survenue lors de l'envoi." },
-      { status: 500 }
+    console.error(
+      "[api/estimation] resend send failed",
+      error instanceof Error ? error.message : "unknown error"
     );
+    return jsonError("Impossible d'envoyer la demande pour le moment.", 500);
   }
 
-  // Save to Sanity if write token is configured
-  if (process.env.SANITY_WRITE_TOKEN) {
+  if (sanityWriteToken) {
     try {
       await writeClient.create({
         _type: "estimationLead",
-        brand: brand.trim(),
-        model: model.trim(),
+        brand,
+        model,
         year: yearNum,
         mileage: mileageNum,
         power: powerNum,
-        fuel: fuel.trim(),
-        transmission: transmission.trim(),
-        version: version?.trim() || undefined,
-        etat: etat.trim(),
-        localisation: localisation?.trim() || undefined,
-        phone: phone.trim(),
-        email: email?.trim() || undefined,
-        message: message?.trim() || undefined,
+        fuel,
+        transmission,
+        version: version || undefined,
+        etat,
+        localisation: localisation || undefined,
+        phone,
+        email: email || undefined,
+        message: message || undefined,
         submittedAt: new Date().toISOString(),
       });
     } catch (error) {
-      console.error("[api/estimation] sanity write error:", error);
+      console.error(
+        "[api/estimation] sanity write failed",
+        error instanceof Error ? error.message : "unknown error"
+      );
     }
   }
 
