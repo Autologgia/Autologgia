@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RecentVehiclesGrid from "@/components/RecentVehiclesGrid";
 import HomepageContactForm from "@/components/HomepageContactForm";
+import GoogleReviewsSection from "@/components/GoogleReviewsSection";
 import SplashScreen from "@/components/SplashScreen";
 import type { Car } from "@/lib/types";
 
@@ -43,8 +44,6 @@ export default async function Home() {
       {/* ── HERO ── */}
       <section className="hero-section relative flex flex-col items-center justify-center overflow-hidden px-5 sm:px-6 pt-24 pb-16 text-center">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0B1929] via-[#0B1929] to-[#0a1520]" />
-        <div className="absolute left-1/2 top-0 h-40 w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-[#C9A84C]/25 to-transparent" />
-
         <div className="relative z-10 w-full max-w-4xl">
           <p className="hero-eyebrow text-[10px] sm:text-xs font-medium uppercase tracking-[0.35em] sm:tracking-[0.5em] text-[#C9A84C]">
             Automobile premium
@@ -372,6 +371,8 @@ export default async function Home() {
           </p>
         </div>
       </section>
+
+      <GoogleReviewsSection />
 
       {/* ── CONTACT ── */}
       <section id="contact" className="bg-navy-light px-6 py-24">

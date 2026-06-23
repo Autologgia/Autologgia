@@ -6,16 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { urlFor } from "@/lib/sanity";
 import type { Car } from "@/lib/types";
 import { formatCarPrice, formatMileage, formatPower } from "@/lib/format";
-
-const STATUS_CONFIG: Record<string, { label: string; bg: string }> = {
-  disponible:     { label: "Disponible",       bg: "bg-emerald-500" },
-  en_preparation: { label: "En préparation",   bg: "bg-amber-500" },
-  reserve:        { label: "Réservé",          bg: "bg-sky-500" },
-  vendu:          { label: "Vendu",            bg: "bg-gray-500" },
-  // backward compat
-  occasion:       { label: "Disponible",       bg: "bg-emerald-500" },
-  neuf:           { label: "Disponible",       bg: "bg-emerald-500" },
-};
+import { getVehicleStatusInfo } from "@/lib/vehicle-status";
 
 interface Props {
   car: Car;
@@ -35,7 +26,7 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
 
   const [isMobile, setIsMobile] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const statusInfo = car.status ? (STATUS_CONFIG[car.status] ?? null) : null;
+  const statusInfo = getVehicleStatusInfo(car.status);
   const hasMultipleImages = imageUrls.length > 1;
   const formattedPrice = formatCarPrice(car.numericPrice, car.price);
   const formattedMileage = formatMileage(car.mileage);
@@ -127,7 +118,7 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
 
         {/* Status badge */}
         {statusInfo && (
-          <div className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold text-white shadow-sm ${statusInfo.bg}`}>
+          <div className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold text-white shadow-sm ${statusInfo.badgeBg}`}>
             {statusInfo.label}
           </div>
         )}

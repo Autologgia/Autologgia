@@ -24,6 +24,10 @@
   /* Borders clairs (nouveau) */
   --brand-border: #e5e3dd;
   --brand-border-light: #f0ede8;
+
+  /* Rouge premium */
+  --brand-red: #a04444;
+  --brand-red-soft: #f5eaea;
 }
 
 /* Tailwind v4 — génère bg-gold, text-navy, bg-surface-alt, etc. */
@@ -37,6 +41,8 @@
   --color-surface: var(--brand-surface);
   --color-surface-alt: var(--brand-surface-alt);
   --color-surface-muted: var(--brand-surface-muted);
+  --color-premium-red: var(--brand-red);
+  --color-premium-red-soft: var(--brand-red-soft);
   --font-heading: var(--font-cormorant);
   --font-sans: var(--font-inter);
 }
@@ -92,6 +98,56 @@ html {
 
 @utility animate-scroll-chevron {
   animation: scroll-chevron 2.2s ease-in-out infinite;
+}
+
+@keyframes google-reviews-marquee {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.google-reviews-marquee {
+  animation: google-reviews-marquee 70s linear infinite;
+}
+
+.google-reviews-viewport {
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 8%,
+    #000 92%,
+    transparent 100%
+  );
+}
+
+.google-review-mobile-hint {
+  animation: google-review-mobile-hint 1.05s cubic-bezier(0.33, 1, 0.68, 1) 0.25s both;
+}
+
+@keyframes google-review-mobile-hint {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  32% {
+    transform: translateX(16px);
+  }
+  64% {
+    transform: translateX(-12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .google-reviews-marquee {
+    animation: none;
+  }
+
+  .google-review-mobile-hint {
+    animation: none;
+  }
 }
 
 /* ── Hero — typographie fluide et layout robuste ── */

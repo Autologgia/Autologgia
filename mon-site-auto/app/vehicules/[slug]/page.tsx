@@ -10,20 +10,12 @@ import Footer from "@/components/Footer";
 import type { Metadata } from "next";
 import type { SanityImageSource } from "@sanity/image-url";
 import type { Car } from "@/lib/types";
+import { getVehicleStatusInfo } from "@/lib/vehicle-status";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export const revalidate = 60;
 export const dynamicParams = true;
-
-const STATUS_MAP: Record<string, { label: string; classes: string }> = {
-  disponible:     { label: "Disponible",     classes: "bg-emerald-500/15 text-emerald-600" },
-  occasion:       { label: "Disponible",     classes: "bg-emerald-500/15 text-emerald-600" },
-  neuf:           { label: "Disponible",     classes: "bg-emerald-500/15 text-emerald-600" },
-  en_preparation: { label: "En préparation", classes: "bg-amber-500/15 text-amber-600" },
-  reserve:        { label: "Réservé",        classes: "bg-sky-500/15 text-sky-600" },
-  vendu:          { label: "Vendu",          classes: "bg-gray-500/15 text-gray-500" },
-};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -97,7 +89,7 @@ export default async function VehiclePage({ params }: Props) {
       urlFor(img).width(1400).height(900).url()
     ) || [];
 
-  const statusInfo = car.status ? (STATUS_MAP[car.status] ?? null) : null;
+  const statusInfo = getVehicleStatusInfo(car.status);
   const formattedPrice = formatCarPrice(car.numericPrice, car.price);
   const descriptionPlain = ptToPlainText(car.description);
   const descriptionPreview = descriptionPlain
@@ -137,7 +129,7 @@ export default async function VehiclePage({ params }: Props) {
               {/* Badges statut + localisation */}
               <div className="flex flex-wrap items-center gap-2">
                 {statusInfo && (
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${statusInfo.classes}`}>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${statusInfo.subtleClasses}`}>
                     {statusInfo.label}
                   </span>
                 )}
