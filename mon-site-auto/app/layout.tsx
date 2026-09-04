@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   title: "Autologgia – Véhicules premium",
   description:
     "Achetez, vendez ou estimez votre véhicule premium avec Autologgia.",
+  verification: {
+    google: "xrDbgqANd_2frVnbtvV64c_B88_2gzpHxMP4eJzmYag",
+  },
 };
 
 export default function RootLayout({
