@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const UPDATED = "9 mai 2026";
+const UPDATED = "4 septembre 2026";
 
 export default function PolitiqueConfidentialitePage() {
   return (
@@ -98,6 +98,18 @@ export default function PolitiqueConfidentialitePage() {
                   </p>
                 </SubSection>
 
+                <SubSection title="Avec Google Analytics 4, après votre consentement">
+                  <p className="mt-3 leading-relaxed text-navy/70">
+                    Si vous acceptez la mesure d&apos;audience, Google Analytics 4 peut collecter des
+                    informations relatives à votre navigation, notamment les pages consultées, les
+                    interactions avec le site, le type d&apos;appareil et de navigateur, la provenance
+                    de la visite ainsi qu&apos;une localisation approximative. Autologgia ne transmet
+                    volontairement à Google Analytics aucune donnée directement identifiante issue
+                    de ses formulaires, telle que votre nom, votre adresse email, votre numéro de
+                    téléphone ou le contenu de vos messages.
+                  </p>
+                </SubSection>
+
               </div>
             </section>
 
@@ -113,6 +125,7 @@ export default function PolitiqueConfidentialitePage() {
                     "Assurer le suivi de votre dossier dans le cadre d'un projet d'achat ou de vente",
                     "Vous contacter par téléphone ou email dans le cadre de votre demande",
                     "Assurer la sécurité et le bon fonctionnement du site",
+                    "Mesurer, avec votre accord, l'audience et l'utilisation du site afin d'en améliorer les contenus et l'expérience",
                   ].map((item) => <Li key={item}>{item}</Li>)}
                 </ul>
                 <p>
@@ -132,6 +145,7 @@ export default function PolitiqueConfidentialitePage() {
                 </p>
                 <ul className="space-y-2">
                   <Li><strong className="font-medium text-navy">Votre consentement</strong> — recueilli explicitement via la case à cocher présente sur nos formulaires, conformément à l'article 6.1.a du RGPD.</Li>
+                  <Li><strong className="font-medium text-navy">Votre consentement Analytics</strong> — recueilli séparément au moyen du bandeau de choix avant l&apos;activation de Google Analytics 4. Vous pouvez le retirer à tout moment.</Li>
                   <Li><strong className="font-medium text-navy">L'exécution d'un contrat ou de mesures précontractuelles</strong> — lorsque vous nous sollicitez dans le cadre d'un projet d'achat ou de vente (article 6.1.b du RGPD).</Li>
                   <Li><strong className="font-medium text-navy">Notre intérêt légitime</strong> — pour assurer la sécurité du site et prévenir les fraudes (article 6.1.f du RGPD).</Li>
                 </ul>
@@ -170,6 +184,7 @@ export default function PolitiqueConfidentialitePage() {
                   <Li><strong className="font-medium text-navy">Vercel Inc.</strong> (hébergement du site) — Politique de confidentialité disponible sur vercel.com</Li>
                   <Li><strong className="font-medium text-navy">Resend Inc.</strong> (envoi d'e-mails transactionnels) — Politique disponible sur resend.com</Li>
                   <Li><strong className="font-medium text-navy">Sanity AS</strong> (gestion du contenu CMS) — Politique disponible sur sanity.io</Li>
+                  <Li><strong className="font-medium text-navy">Google Analytics 4</strong> (mesure d&apos;audience, uniquement après consentement) — Politique disponible sur policies.google.com/privacy</Li>
                 </ul>
                 <p>
                   Ces sous-traitants agissent sur instruction d'Autologgia et s'engagent
@@ -216,23 +231,31 @@ export default function PolitiqueConfidentialitePage() {
             </section>
 
             {/* 8. Cookies */}
-            <section>
+            <section id="cookies">
               <SectionTitle n="8" title="Cookies" />
               <div className="mt-5 space-y-4 leading-relaxed text-navy/70">
                 <p>
-                  Ce site utilise uniquement des <strong className="font-medium text-navy">cookies
-                  techniques strictement nécessaires</strong> à son fonctionnement normal :
-                  gestion des sessions, préférences de navigation et sécurité. Ces cookies
-                  n'impliquent pas de consentement préalable en vertu de la directive ePrivacy.
+                  Le site utilise un stockage local strictement nécessaire pour mémoriser votre
+                  choix relatif à la mesure d&apos;audience. Ce choix ne contient aucune donnée
+                  personnelle et reste enregistré dans votre navigateur jusqu&apos;à ce que vous le
+                  modifiiez ou supprimiez les données locales du site.
                 </p>
                 <p>
-                  Nous n'utilisons actuellement <strong className="font-medium text-navy">aucun
-                  cookie de mesure d'audience, de publicité ou de suivi tiers</strong>
-                  {" "}(Google Analytics, Meta Pixel, etc.).
+                  Avec votre accord, Autologgia utilise{" "}
+                  <strong className="font-medium text-navy">Google Analytics 4</strong>, identifié
+                  par le code de mesure G-X6FK7Y19L7, afin de produire des statistiques d&apos;audience
+                  et de comprendre la manière dont le site est utilisé. Après acceptation, Google
+                  Analytics peut déposer ou lire des cookies de mesure d&apos;audience et recevoir les
+                  données techniques et de navigation décrites ci-dessus.
                 </p>
                 <p>
-                  Si cette pratique venait à évoluer, nous mettrons à jour la présente politique
-                  et recueillerons votre consentement conformément à la réglementation applicable.
+                  Le tag Google Analytics n&apos;est pas chargé avant votre accord. Le bouton
+                  «&nbsp;Refuser&nbsp;» est proposé au même niveau que le bouton
+                  «&nbsp;Accepter&nbsp;» et le refus n&apos;empêche pas l&apos;utilisation du site. Vous
+                  pouvez modifier ou retirer votre choix à tout moment au moyen du bouton
+                  «&nbsp;Gérer mes cookies&nbsp;» affiché en bas du site. En cas de retrait, la
+                  collecte est arrêtée et les cookies Google Analytics accessibles au site sont
+                  supprimés.
                 </p>
               </div>
             </section>

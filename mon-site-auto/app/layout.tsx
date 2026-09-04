@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { GoogleAnalytics } from "@next/third-parties/google";
 import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import StickyContact from "@/components/StickyContact";
+import AnalyticsConsent from "@/components/AnalyticsConsent";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -40,8 +40,8 @@ export default function RootLayout({
       <body className="relative min-h-full flex flex-col bg-navy">
         {children}
         <StickyContact />
+        <AnalyticsConsent />
       </body>
-      <GoogleAnalytics gaId="G-X6FK7Y19L7" />
     </html>
   );
 }
