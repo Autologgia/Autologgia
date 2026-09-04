@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import StickyContact from "@/components/StickyContact";
@@ -40,6 +41,7 @@ export default function RootLayout({
         {children}
         <StickyContact />
       </body>
+      <GoogleAnalytics gaId="G-X6FK7Y19L7" />
     </html>
   );
 }
