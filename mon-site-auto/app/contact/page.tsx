@@ -1,6 +1,7 @@
 import ContactForm from "@/components/ContactForm";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import TrackedLink from "@/components/TrackedLink";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -108,8 +109,10 @@ export default async function ContactPage({
                 </div>
               </div>
 
-              <a
+              <TrackedLink
                 href={MAPS_DIRECTIONS}
+                eventName="click_maps"
+                eventParameters={{ placement: "contact_page" }}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#C9A84C] px-6 py-4 font-semibold text-white transition hover:bg-[#b8962e]"
@@ -127,19 +130,21 @@ export default async function ContactPage({
                   <polygon points="3 11 22 2 13 21 11 13 3 11" />
                 </svg>
                 Obtenir l&apos;itinéraire
-              </a>
+              </TrackedLink>
 
               {/* Infos contact rapides */}
               <div className="mt-6 space-y-3">
-                <a
+                <TrackedLink
                   href="tel:+33664799424"
+                  eventName="click_phone"
+                  eventParameters={{ placement: "contact_page" }}
                   className="flex items-center gap-3 rounded-xl border border-navy/10 bg-[#f8f7f5] px-5 py-3.5 text-sm text-navy/70 transition hover:border-[#C9A84C]/40 hover:text-navy"
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.14 12a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 3.12 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 5.61 5.61l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
                   </svg>
                   +33 6 64 79 94 24
-                </a>
+                </TrackedLink>
                 <div className="flex items-center gap-3 rounded-xl border border-navy/10 bg-[#f8f7f5] px-5 py-3.5 text-sm text-navy/70">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />

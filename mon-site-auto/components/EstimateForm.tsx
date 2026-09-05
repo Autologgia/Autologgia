@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { trackGA4Event } from "@/lib/analytics";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -85,6 +86,13 @@ export default function EstimateForm() {
       const result = await res.json();
 
       if (result.success) {
+        if (res.ok && !data.website.trim()) {
+          trackGA4Event("generate_lead", {
+            form_name: "vehicle_estimation",
+            lead_type: "seller_estimation",
+            has_photos: photos.length > 0,
+          });
+        }
         setStatus("success");
         form.reset();
         setPhotoCount(0);

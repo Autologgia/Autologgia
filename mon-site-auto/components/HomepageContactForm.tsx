@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { trackGA4Event } from "@/lib/analytics";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -44,6 +45,11 @@ export default function HomepageContactForm() {
       const result = await res.json();
 
       if (result.success) {
+        if (res.ok && !data.website.trim()) {
+          trackGA4Event("generate_lead", {
+            form_name: "homepage_contact",
+          });
+        }
         setStatus("success");
         form.reset();
       } else {

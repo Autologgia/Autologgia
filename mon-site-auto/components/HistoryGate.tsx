@@ -3,12 +3,14 @@
 import { useState } from "react";
 import PortableTextContent from "@/components/PortableTextContent";
 import type { PortableTextBlock } from "@portabletext/types";
+import { trackGA4Event } from "@/lib/analytics";
 
 type Phase = "unavailable" | "locked" | "form" | "unlocked";
 type FormStatus = "idle" | "loading" | "error";
 
 interface Props {
   carName: string;
+  vehicleSlug?: string;
   historyText?: PortableTextBlock[] | string;
   historyFileUrl?: string;
 }
@@ -16,7 +18,7 @@ interface Props {
 const inputCls =
   "mt-2 w-full rounded-xl border border-[#e5e3dd] bg-white px-4 py-3 text-navy outline-none transition focus:border-[#C9A84C]/60 placeholder:text-gray-400 text-sm";
 
-export default function HistoryGate({ carName, historyText, historyFileUrl }: Props) {
+export default function HistoryGate({ carName, vehicleSlug, historyText, historyFileUrl }: Props) {
   const hasHistory = !!(historyText || historyFileUrl);
 
   const [phase, setPhase] = useState<Phase>(hasHistory ? "locked" : "unavailable");
@@ -48,6 +50,12 @@ export default function HistoryGate({ carName, historyText, historyFileUrl }: Pr
       const result = await res.json();
 
       if (result.success) {
+        if (res.ok) {
+          trackGA4Event("generate_lead", {
+            form_name: "vehicle_history",
+            ...(vehicleSlug ? { vehicle_slug: vehicleSlug } : {}),
+          });
+        }
         setPhase("unlocked");
       } else {
         setFormStatus("error");

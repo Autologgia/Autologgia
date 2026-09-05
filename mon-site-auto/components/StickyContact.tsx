@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import TrackedLink from "@/components/TrackedLink";
 
 const WA_LINK =
   "https://wa.me/33664799424?text=Bonjour%2C+je+suis+int%C3%A9ress%C3%A9+par+un+v%C3%A9hicule.";
@@ -39,24 +40,28 @@ export default function StickyContact() {
       }`}
     >
       {/* Appel rapide — mobile uniquement */}
-      <a
+      <TrackedLink
         href="tel:+33664799424"
+        eventName="click_phone"
+        eventParameters={{ placement: "sticky_contact" }}
         aria-label="Appeler Autologgia"
         className="flex h-11 w-11 items-center justify-center rounded-full border border-[#C9A84C]/40 bg-[#0B1929] text-[#C9A84C] shadow-xl transition hover:border-[#C9A84C] hover:bg-[#0F2035] md:hidden"
       >
         <PhoneIcon />
-      </a>
+      </TrackedLink>
 
       {/* WhatsApp — toujours visible */}
-      <a
+      <TrackedLink
         href={WA_LINK}
+        eventName="click_whatsapp"
+        eventParameters={{ placement: "sticky_contact" }}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Contacter sur WhatsApp"
         className="flex h-11 w-11 items-center justify-center rounded-full bg-[#25D366] text-white shadow-xl transition hover:bg-[#1EB85A] hover:scale-105 md:h-14 md:w-14"
       >
         <WhatsAppIcon />
-      </a>
+      </TrackedLink>
     </div>
   );
 }
