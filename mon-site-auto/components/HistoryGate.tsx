@@ -13,17 +13,19 @@ interface Props {
   vehicleSlug?: string;
   historyText?: PortableTextBlock[] | string;
   historyFileUrl?: string;
+  hasHistoryFile?: boolean;
 }
 
 const inputCls =
   "mt-2 w-full rounded-xl border border-[#e5e3dd] bg-white px-4 py-3 text-navy outline-none transition focus:border-[#C9A84C]/60 placeholder:text-gray-400 text-sm";
 
-export default function HistoryGate({ carName, vehicleSlug, historyText, historyFileUrl }: Props) {
-  const hasHistory = !!(historyText || historyFileUrl);
+export default function HistoryGate({ carName, vehicleSlug, historyText, historyFileUrl, hasHistoryFile = false }: Props) {
+  const hasHistory = !!(historyText || historyFileUrl || hasHistoryFile);
 
   const [phase, setPhase] = useState<Phase>(hasHistory ? "locked" : "unavailable");
   const [formStatus, setFormStatus] = useState<FormStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [unlockedFileUrl, setUnlockedFileUrl] = useState(historyFileUrl);
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -44,6 +46,7 @@ export default function HistoryGate({ carName, vehicleSlug, historyText, history
           phone,
           email,
           message: `Demande d'accès à l'historique du véhicule : ${carName}.`,
+          ...(hasHistoryFile && !historyFileUrl && vehicleSlug ? { historyVehicleSlug: vehicleSlug } : {}),
         }),
       });
 
@@ -55,6 +58,18 @@ export default function HistoryGate({ carName, vehicleSlug, historyText, history
             form_name: "vehicle_history",
             ...(vehicleSlug ? { vehicle_slug: vehicleSlug } : {}),
           });
+        }
+        if (hasHistoryFile && !historyFileUrl && vehicleSlug) {
+          const historyResponse = await fetch(`/api/vehicle-history/${encodeURIComponent(vehicleSlug)}`, {
+            cache: "no-store",
+          });
+          const historyResult = await historyResponse.json();
+          if (!historyResponse.ok || typeof historyResult.url !== "string") {
+            setFormStatus("error");
+            setErrorMessage(historyResult.error ?? "Le document est temporairement indisponible.");
+            return;
+          }
+          setUnlockedFileUrl(historyResult.url);
         }
         setPhase("unlocked");
       } else {
@@ -209,9 +224,9 @@ export default function HistoryGate({ carName, vehicleSlug, historyText, history
             <PortableTextContent value={historyText} className="text-sm text-[#071A2D]" />
           )}
 
-          {historyFileUrl && (
+          {unlockedFileUrl && (
             <a
-              href={historyFileUrl}
+              href={unlockedFileUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#C9A84C] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#b8962e]"

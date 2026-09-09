@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { Metadata } from "next";
-import { sanityFetch } from "@/lib/sanity";
+import { getRecentVehicles } from "@/lib/cms/vehicles";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RecentVehiclesGrid from "@/components/RecentVehiclesGrid";
@@ -19,21 +19,7 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function Home() {
-  const cars = await sanityFetch<Car[]>(`
-    *[_type == "car"] | order(_createdAt desc) [0..2] {
-      name,
-      "slug": slug.current,
-      price,
-      numericPrice,
-      year,
-      mileage,
-      transmission,
-      fuel,
-      power,
-      "images": images[defined(asset)],
-      status
-    }
-  `);
+  const cars: Car[] = await getRecentVehicles();
 
   return (
     <main className="min-h-screen">

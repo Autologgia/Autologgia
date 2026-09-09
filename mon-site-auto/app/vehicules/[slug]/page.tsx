@@ -1,4 +1,4 @@
-import { sanityFetch, urlFor } from "@/lib/sanity";
+import { getVehicleBySlug, getVehicleMetadataBySlug } from "@/lib/cms/vehicles";
 import { formatCarPrice, formatMileage, formatPower } from "@/lib/format";
 import Link from "next/link";
 import VehicleGallery from "@/components/VehicleGallery";
@@ -9,9 +9,9 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import TrackedLink from "@/components/TrackedLink";
 import type { Metadata } from "next";
-import type { SanityImageSource } from "@sanity/image-url";
 import type { Car } from "@/lib/types";
 import { getVehicleStatusInfo } from "@/lib/vehicle-status";
+import { getVehicleImageAlt, getVehicleImageUrl } from "@/lib/vehicle-images";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -20,12 +20,7 @@ export const dynamicParams = true;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const car = await sanityFetch<
-    Pick<Car, "name" | "price" | "numericPrice" | "description">
-  >(
-    `*[_type == "car" && slug.current == $slug][0]{ name, price, numericPrice, description }`,
-    { slug }
-  );
+  const car = await getVehicleMetadataBySlug(slug);
 
   if (!car) return { title: "Véhicule – Autologgia" };
 
@@ -42,27 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function VehiclePage({ params }: Props) {
   const { slug } = await params;
 
-  const car = await sanityFetch<Car>(
-    `*[_type == "car" && slug.current == $slug][0]{
-      name,
-      price,
-      numericPrice,
-      year,
-      mileage,
-      transmission,
-      fuel,
-      power,
-      "images": images[defined(asset)],
-      description,
-      status,
-      location,
-      critAir,
-      options,
-      historyText,
-      historyFile { asset->{ url } }
-    }`,
-    { slug }
-  );
+  const car: Car | null = await getVehicleBySlug(slug);
 
   if (!car) {
     return (
@@ -85,10 +60,11 @@ export default async function VehiclePage({ params }: Props) {
     );
   }
 
-  const imageUrls =
-    car.images?.map((img: SanityImageSource) =>
-      urlFor(img).width(1400).height(900).url()
-    ) || [];
+  const galleryImages =
+    car.images?.map((image, index) => ({
+      src: getVehicleImageUrl(image, 1400, 900),
+      alt: getVehicleImageAlt(image, `${car.name} — vue ${index + 1}`),
+    })) || [];
 
   const statusInfo = getVehicleStatusInfo(car.status);
   const formattedPrice = formatCarPrice(car.numericPrice, car.price);
@@ -121,7 +97,7 @@ export default async function VehiclePage({ params }: Props) {
 
             {/* Galerie */}
             <section>
-              <VehicleGallery images={imageUrls} />
+              <VehicleGallery images={galleryImages} />
             </section>
 
             {/* Panneau d'informations — reste bleu foncé */}
@@ -228,6 +204,7 @@ export default async function VehiclePage({ params }: Props) {
               vehicleSlug={slug}
               historyText={car.historyText}
               historyFileUrl={historyFileUrl}
+              hasHistoryFile={car.hasHistoryFile}
             />
           </div>
 

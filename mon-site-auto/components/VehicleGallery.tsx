@@ -9,11 +9,13 @@ const MOBILE_THUMB_COUNT = 4;
 const DESKTOP_THUMB_COUNT = 6;
 const THUMB_DRAG_INTENT_PX = 6;
 
+export type GalleryImage = { src: string; alt: string };
+
 function getThumbnailStart(index: number, visibleCount: number, total: number) {
   return Math.min(Math.max(index - (visibleCount - 1), 0), Math.max(total - visibleCount, 0));
 }
 
-export default function VehicleGallery({ images }: { images: string[] }) {
+export default function VehicleGallery({ images }: { images: GalleryImage[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [timerKey, setTimerKey] = useState(0);
@@ -79,11 +81,11 @@ export default function VehicleGallery({ images }: { images: string[] }) {
         onTouchStart={(event) => setMainTouchStartX(event.touches[0]?.clientX ?? null)}
         onTouchEnd={(event) => handleMainTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
       >
-        {images.map((src, i) => (
+        {images.map((image, i) => (
           <Image
-            key={i}
-            src={src}
-            alt="Image véhicule"
+            key={`${image.src}-${i}`}
+            src={image.src}
+            alt={image.alt}
             fill
             className={`object-cover transition-opacity duration-700 ease-in-out ${
               i === activeIndex ? "opacity-100" : "opacity-0"
@@ -231,7 +233,7 @@ function AllImagesOverlay({
   onClose,
   onSelect,
 }: {
-  images: string[];
+  images: GalleryImage[];
   activeIndex: number;
   onClose: () => void;
   onSelect: (index: number) => void;
@@ -261,9 +263,9 @@ function AllImagesOverlay({
 
         <div className="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
           <div className="grid grid-cols-2 gap-3 pb-3 sm:grid-cols-3 lg:grid-cols-4">
-            {images.map((img, index) => (
+            {images.map((image, index) => (
               <button
-                key={`${img}-full-${index}`}
+                key={`${image.src}-full-${index}`}
                 onClick={() => onSelect(index)}
                 aria-label={`Afficher l'image ${index + 1}`}
                 className={`group relative aspect-[4/3] overflow-hidden rounded-xl border-2 bg-navy-mid transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C] ${
@@ -273,8 +275,8 @@ function AllImagesOverlay({
                 }`}
               >
                 <Image
-                  src={img}
-                  alt={`Image véhicule ${index + 1}`}
+                  src={image.src}
+                  alt={image.alt}
                   fill
                   className="object-cover transition duration-500 group-hover:scale-105"
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -302,7 +304,7 @@ function ThumbnailRail({
   onInteractionEnd,
   className = "",
 }: {
-  images: string[];
+  images: GalleryImage[];
   activeIndex: number;
   startIndex: number;
   visibleCount: number;
@@ -449,9 +451,9 @@ function ThumbnailRail({
           touchAction: "pan-y",
         }}
       >
-        {images.map((img, i) => (
+        {images.map((image, i) => (
           <button
-            key={`${img}-${i}`}
+            key={`${image.src}-${i}`}
             onClick={() => {
               if (suppressClickRef.current) return;
               onNavigate(i);
@@ -466,8 +468,8 @@ function ThumbnailRail({
             style={{ flexBasis: itemBasis }}
           >
             <Image
-              src={img}
-              alt={`Vue ${i + 1}`}
+              src={image.src}
+              alt={image.alt}
               fill
               draggable={false}
               className="object-cover"

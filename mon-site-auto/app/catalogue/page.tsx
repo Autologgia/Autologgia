@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { sanityFetch } from "@/lib/sanity";
+import { getAllVehicles } from "@/lib/cms/vehicles";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import VehicleGrid from "@/components/VehicleGrid";
@@ -14,23 +14,7 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function CataloguePage() {
-  const cars = await sanityFetch<Car[]>(`
-    *[_type == "car"] | order(_createdAt desc) {
-      name,
-      "slug": slug.current,
-      price,
-      numericPrice,
-      year,
-      mileage,
-      transmission,
-      fuel,
-      power,
-      "images": images[defined(asset)],
-      status,
-      brand,
-      model
-    }
-  `);
+  const cars: Car[] = await getAllVehicles();
 
   return (
     <main className="min-h-screen bg-white">
