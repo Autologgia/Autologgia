@@ -16,7 +16,9 @@ export const metadata: Metadata = {
     "Achetez, vendez ou estimez votre véhicule premium avec Autologgia. Sélection rigoureuse, transparence totale, accompagnement personnalisé.",
 };
 
-export const revalidate = 60;
+// Filet de sécurité : le rafraîchissement rapide passe par revalidateTag
+// (POST /api/cms/revalidate déclenché par Synergy). Cf. lib/cms/tags.ts.
+export const revalidate = 300;
 
 export default async function Home() {
   const cars: Car[] = await getRecentVehicles();

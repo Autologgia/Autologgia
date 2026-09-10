@@ -2,7 +2,14 @@ import "server-only";
 
 import type { PortableTextBlock } from "@portabletext/types";
 import { getSynergyDeliveryConfig } from "@/lib/cms/config";
+import { vehicleTag, vehiclesTag } from "@/lib/cms/tags";
 import type { Car, DeliveryImage } from "@/lib/types";
+
+// Filet de sécurité : si une notification de revalidation depuis Synergy est
+// manquée (réseau, déploiement en cours…), l'entrée de cache expire malgré
+// tout au bout de ce délai. Le chemin rapide reste `revalidateTag` piloté par
+// Synergy (voir app/api/cms/revalidate/route.ts).
+const FILET_REVALIDATE_SECONDS = 300;
 
 type RichTextDoc = {
   version: 1;
@@ -123,7 +130,7 @@ async function synergyFetch<T>(path: string): Promise<T> {
   const { baseUrl, token } = getSynergyDeliveryConfig();
   const response = await fetch(`${baseUrl}${path}`, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-    next: { revalidate: 60 },
+    next: { revalidate: FILET_REVALIDATE_SECONDS, tags: [vehiclesTag()] },
   });
   if (!response.ok) {
     throw new Error(`API CMS Synergy indisponible (${response.status}).`);
@@ -140,7 +147,7 @@ export async function fetchSynergyVehicle(slug: string): Promise<Car | null> {
   const { baseUrl, token } = getSynergyDeliveryConfig();
   const response = await fetch(`${baseUrl}/api/public/cms/vehicles/${encodeURIComponent(slug)}`, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-    next: { revalidate: 60 },
+    next: { revalidate: FILET_REVALIDATE_SECONDS, tags: [vehiclesTag(), vehicleTag(slug)] },
   });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`API CMS Synergy indisponible (${response.status}).`);

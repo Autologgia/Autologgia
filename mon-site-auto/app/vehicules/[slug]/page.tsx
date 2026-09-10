@@ -15,7 +15,9 @@ import { getVehicleImageAlt, getVehicleImageUrl } from "@/lib/vehicle-images";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export const revalidate = 60;
+// Filet de sécurité : le rafraîchissement rapide passe par revalidateTag
+// (POST /api/cms/revalidate déclenché par Synergy). Cf. lib/cms/tags.ts.
+export const revalidate = 300;
 export const dynamicParams = true;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

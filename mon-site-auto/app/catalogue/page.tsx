@@ -11,7 +11,9 @@ export const metadata: Metadata = {
     "Parcourez l'ensemble des véhicules premium disponibles chez Autologgia. Filtrez par marque, catégorie, statut et prix.",
 };
 
-export const revalidate = 60;
+// Filet de sécurité : le rafraîchissement rapide passe par revalidateTag
+// (POST /api/cms/revalidate déclenché par Synergy). Cf. lib/cms/tags.ts.
+export const revalidate = 300;
 
 export default async function CataloguePage() {
   const cars: Car[] = await getAllVehicles();
