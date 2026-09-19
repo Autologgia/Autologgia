@@ -8,6 +8,16 @@ export type SanityImage = {
   };
 };
 
+export type DeliveryImage = {
+  _key: string;
+  url: string;
+  altText: string;
+  width?: number | null;
+  height?: number | null;
+};
+
+export type CarImage = SanityImage | DeliveryImage;
+
 export type Car = {
   name: string;
   slug: string;
@@ -17,7 +27,7 @@ export type Car = {
   transmission: string;
   fuel: string;
   power: string | number;
-  images: SanityImage[];
+  images: CarImage[];
   description?: PortableTextBlock[] | string;
   status?: string;
   location?: string;
@@ -29,4 +39,6 @@ export type Car = {
   numericPrice?: number | string;
   historyText?: PortableTextBlock[] | string;
   historyFile?: { asset: { url: string } };
+  hasHistoryFile?: boolean;
+  updatedAt?: string;
 };

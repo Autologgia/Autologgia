@@ -64,7 +64,7 @@ export default async function ContactPage({
                 </div>
               )}
 
-              <ContactForm vehicule={vehicule} demande={demande} />
+              <ContactForm vehicule={vehicule} demande={demande} vehicleSlug={retourVehicule} />
             </div>
 
             {/* ── COLONNE DROITE : carte Google Maps ── */}

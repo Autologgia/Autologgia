@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanityWriteToken, writeClient } from "@/lib/sanity-write";
+import { forwardLeadToSynergy } from "@/lib/synergy-leads";
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
 const TO = "autologgia.web@gmail.com";
@@ -26,6 +27,22 @@ const ALLOWED_FIELDS = new Set([
   "message",
   "website",
   "photos",
+  "attribution",
+  "submissionId",
+]);
+const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const ALLOWED_ATTRIBUTION_FIELDS = new Set([
+  "firstLandingPage",
+  "conversionPage",
+  "referrer",
+  "utmSource",
+  "utmMedium",
+  "utmCampaign",
+  "utmContent",
+  "utmTerm",
+  "gclid",
+  "fbclid",
+  "msclkid",
 ]);
 const ALLOWED_FUELS = new Set(["essence", "diesel", "hybride", "electrique"]);
 const ALLOWED_TRANSMISSIONS = new Set(["automatique", "manuelle"]);
@@ -51,6 +68,18 @@ function cleanText(value: unknown, max: number) {
 
 function hasOnlyAllowedFields(body: Record<string, unknown>) {
   return Object.keys(body).every((key) => ALLOWED_FIELDS.has(key));
+}
+
+function cleanAttribution(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const source = value as Record<string, unknown>;
+  const result: Record<string, string> = {};
+  for (const key of Object.keys(source)) {
+    if (!ALLOWED_ATTRIBUTION_FIELDS.has(key)) continue;
+    const cleaned = cleanSingleLine(source[key], 500);
+    if (cleaned) result[key] = cleaned;
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
 }
 
 function parsePositiveInt(value: string) {
@@ -128,6 +157,12 @@ export async function POST(req: Request) {
   const email = cleanSingleLine(raw.email, 120).toLowerCase();
   const message = cleanText(raw.message, 3000);
   const website = cleanSingleLine(raw.website, 120);
+  const attribution = cleanAttribution(raw.attribution);
+  const suppliedSubmissionId = cleanSingleLine(raw.submissionId, 36);
+  if (raw.submissionId !== undefined && !UUID_V4_PATTERN.test(suppliedSubmissionId)) {
+    return jsonError("Identifiant de soumission invalide.");
+  }
+  const submissionId = suppliedSubmissionId || crypto.randomUUID();
 
   // Honeypot: bots fill this field, humans don't.
   if (website) {
@@ -185,7 +220,7 @@ export async function POST(req: Request) {
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
-    await resend.emails.send({
+    const { error: resendError } = await resend.emails.send({
       from: FROM,
       to: TO,
       subject: `Nouvelle estimation - ${brand} ${model}`,
@@ -209,17 +244,19 @@ export async function POST(req: Request) {
         `Email       : ${email || "non renseigne"}`,
         localisation ? `Localisation: ${localisation}` : null,
         message ? `\nMessage :\n${message}` : null,
-        "",
-        `Date : ${new Date().toLocaleString("fr-FR")}`,
       ]
         .filter((line) => line !== null)
         .join("\n"),
       ...(attachments.length > 0 ? { attachments } : {}),
-    });
+    }, { idempotencyKey: `autologgia-estimation-${submissionId}` });
+    if (resendError) {
+      console.error("[api/estimation] resend rejected email", { submissionId, reason: resendError.name });
+      return jsonError("Impossible d'envoyer la demande pour le moment.", 502);
+    }
   } catch (error) {
     console.error(
       "[api/estimation] resend send failed",
-      error instanceof Error ? error.message : "unknown error"
+      { submissionId, reason: error instanceof Error ? error.name : "unknown" }
     );
     return jsonError("Impossible d'envoyer la demande pour le moment.", 500);
   }
@@ -250,6 +287,31 @@ export async function POST(req: Request) {
       );
     }
   }
+
+  // Transfert Synergy best-effort : ne doit jamais faire échouer la
+  // confirmation déjà envoyée par email (voir lib/synergy-leads.ts).
+  await forwardLeadToSynergy({
+    // Ce formulaire ne recueille pas le nom de la personne : ne pas utiliser
+    // la marque et le modèle comme identité personnelle.
+    name: "Demande d'estimation",
+    source: "autologgia",
+    formKey: "vehicle_estimation",
+    idempotencyKey: submissionId,
+    email: email || undefined,
+    phone,
+    message: message || undefined,
+    subject: "Estimation véhicule",
+    product: {
+      type: "vehicle_estimation",
+      label: `${brand} ${model}`.trim() || undefined,
+      estimation: {
+        brand, model, year: yearNum, mileage: mileageNum, power: powerNum,
+        fuel, transmission, version: version || undefined, condition: etat,
+        location: localisation || undefined,
+      },
+    },
+    attribution,
+  });
 
   return Response.json({ success: true });
 }

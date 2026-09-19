@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { trackGA4Event } from "@/lib/analytics";
+import { getAttributionForSubmit } from "@/lib/attribution";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -38,6 +39,7 @@ export default function EstimateForm() {
   const [errorMessage, setErrorMessage] = useState("");
   const [photoCount, setPhotoCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const submissionIdRef = useRef<string | null>(null);
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,6 +47,7 @@ export default function EstimateForm() {
     setErrorMessage("");
 
     const form = e.currentTarget;
+    const submissionId = submissionIdRef.current ??= crypto.randomUUID();
     const get = (name: string) =>
       (form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement)?.value ?? "";
 
@@ -59,6 +62,7 @@ export default function EstimateForm() {
     }
 
     const data = {
+      submissionId,
       brand: get("brand"),
       model: get("model"),
       year: get("year"),
@@ -74,6 +78,7 @@ export default function EstimateForm() {
       message: get("message"),
       website: get("website"),
       photos,
+      attribution: getAttributionForSubmit(),
     };
 
     try {
@@ -94,6 +99,7 @@ export default function EstimateForm() {
           });
         }
         setStatus("success");
+        submissionIdRef.current = null;
         form.reset();
         setPhotoCount(0);
       } else {
