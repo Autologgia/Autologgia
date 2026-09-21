@@ -117,10 +117,27 @@ describe("GET /api/vehicle-history/[slug] (PDF d'historique protégé)", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("cookie altéré -> 401", async () => {
-    cookieValue.value = createHistoryAccessToken("clio-3").token.replace(/.$/, "x");
+  it("signature altérée (octet significatif inversé) -> 401", async () => {
+    // Le dernier caractère base64url d'une signature de 32 octets ne porte que 4 bits utiles :
+    // le remplacer peut décoder vers les MÊMES octets (signature toujours valide). On inverse donc
+    // un octet décodé, ce qui change à coup sûr la signature quelle que soit la valeur du jeton.
+    const [payload, signature] = createHistoryAccessToken("clio-3").token.split(".");
+    const bytes = Buffer.from(signature, "base64url");
+    bytes[0] ^= 0xff;
+    cookieValue.value = `${payload}.${bytes.toString("base64url")}`;
     const response = await getHistory(new Request("https://site.test/x"), slugContext("clio-3"));
     expect(response.status).toBe(401);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("payload altéré avec la signature d'origine -> 401", async () => {
+    const [payload, signature] = createHistoryAccessToken("clio-3").token.split(".");
+    const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { expiresAt: number };
+    const forged = Buffer.from(JSON.stringify({ ...claims, expiresAt: claims.expiresAt + 86_400 }), "utf8").toString("base64url");
+    cookieValue.value = `${forged}.${signature}`;
+    const response = await getHistory(new Request("https://site.test/x"), slugContext("clio-3"));
+    expect(response.status).toBe(401);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("cookie valide : URL signée courte durée relayée, non mise en cache", async () => {
