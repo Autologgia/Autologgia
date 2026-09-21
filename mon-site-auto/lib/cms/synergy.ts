@@ -88,6 +88,18 @@ function toPortableText(document: RichTextDoc | null | undefined): PortableTextB
   })) as PortableTextBlock[];
 }
 
+// Sanity renvoyait `null` pour un texte non renseigné, et la page teste sa simple présence
+// (`car.description && ...`, `hasHistory = !!historyText`). Synergy renvoie toujours un document
+// (éventuellement sans bloc) : un `[]` serait truthy et afficherait une section « Description »
+// vide ou l'invite « Accédez à l'historique » sur un véhicule sans historique. Un texte sans aucun
+// caractère visible est donc traduit en `undefined`, exactement comme l'absence côté Sanity.
+function toOptionalPortableText(document: RichTextDoc | null | undefined): PortableTextBlock[] | undefined {
+  const hasVisibleText = document?.blocks?.some((block) =>
+    block.children?.some((child) => child.text.trim().length > 0),
+  );
+  return hasVisibleText ? toPortableText(document) : undefined;
+}
+
 function mapCritAir(value: DeliveryVehicle["critAir"]) {
   if (value === null) return undefined;
   return value === "not_applicable" ? "Non concerné" : `Crit'air ${value}`;
@@ -113,14 +125,14 @@ function mapVehicle(vehicle: DeliveryVehicle): Car {
     fuel: FUEL[vehicle.fuel],
     power: vehicle.powerHp,
     images,
-    description: toPortableText(vehicle.description),
+    description: toOptionalPortableText(vehicle.description),
     status: STATUS[vehicle.commercialStatus],
     location: vehicle.location ?? undefined,
     critAir: mapCritAir(vehicle.critAir),
     options: vehicle.options,
     brand: vehicle.brand,
     model: vehicle.model,
-    historyText: toPortableText(vehicle.historyText),
+    historyText: toOptionalPortableText(vehicle.historyText),
     hasHistoryFile: vehicle.hasHistoryPdf,
     updatedAt: vehicle.updatedAt,
   };
