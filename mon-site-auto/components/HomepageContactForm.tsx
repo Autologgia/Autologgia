@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { trackGA4Event } from "@/lib/analytics";
+import { getAttributionForSubmit } from "@/lib/attribution";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -19,6 +20,7 @@ const fieldCls =
 export default function HomepageContactForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const submissionIdRef = useRef<string | null>(null);
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,13 +28,17 @@ export default function HomepageContactForm() {
     setErrorMessage("");
 
     const form = e.currentTarget;
+    const submissionId = submissionIdRef.current ??= crypto.randomUUID();
     const data = {
+      submissionId,
+      formKey: "homepage_contact",
       name:    (form.elements.namedItem("name")    as HTMLInputElement).value,
       email:   (form.elements.namedItem("email")   as HTMLInputElement).value,
       phone:   (form.elements.namedItem("phone")   as HTMLInputElement).value,
       sujet:   (form.elements.namedItem("sujet")   as HTMLSelectElement).value,
       message: (form.elements.namedItem("message") as HTMLTextAreaElement).value,
       website: (form.elements.namedItem("website") as HTMLInputElement)?.value ?? "",
+      attribution: getAttributionForSubmit(),
     };
 
     try {
@@ -51,6 +57,7 @@ export default function HomepageContactForm() {
           });
         }
         setStatus("success");
+        submissionIdRef.current = null;
         form.reset();
       } else {
         setStatus("error");

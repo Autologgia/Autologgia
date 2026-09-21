@@ -68,6 +68,8 @@ export default function VehicleGrid({ cars }: { cars: Car[] }) {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("autologgia-favorites");
+      // Initialisation navigateur uniquement, volontairement après hydratation.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (saved) setFavorites(JSON.parse(saved));
     } catch {}
   }, []);
@@ -82,6 +84,8 @@ export default function VehicleGrid({ cars }: { cars: Car[] }) {
         sessionStorage.getItem("autologgia-returning-from-vehicle") === "1";
 
       if (isBackNavigation || isReturningFromVehicle) {
+        // L'information de navigation n'est disponible qu'après hydratation.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setForceRevealCards(true);
         sessionStorage.removeItem("autologgia-returning-from-vehicle");
       }
@@ -402,16 +406,15 @@ function AnimatedVehicleCard({
 }) {
   const wrapRef  = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
-  const delayRef = useRef(0);
+  const [transitionDelay] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches
+      ? (gridIndex % 3) * 100
+      : 0,
+  );
+  const isVisible = forceVisible || visible;
 
   useEffect(() => {
-    if (forceVisible) {
-      setVisible(true);
-      return;
-    }
-
-    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
-    delayRef.current = isDesktop ? (gridIndex % 3) * 100 : 0;
+    if (forceVisible) return;
 
     const el = wrapRef.current;
     if (!el) return;
@@ -427,10 +430,10 @@ function AnimatedVehicleCard({
     <div
       ref={wrapRef}
       style={{
-        opacity:   visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(28px)",
-        transition: visible
-          ? `opacity 0.55s ease ${delayRef.current}ms, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${delayRef.current}ms`
+        opacity:   isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(28px)",
+        transition: isVisible
+          ? `opacity 0.55s ease ${transitionDelay}ms, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${transitionDelay}ms`
           : "none",
       }}
     >

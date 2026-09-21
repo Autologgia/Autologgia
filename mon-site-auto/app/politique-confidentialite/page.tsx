@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const UPDATED = "4 septembre 2026";
+const UPDATED = "21 septembre 2026";
 
 export default function PolitiqueConfidentialitePage() {
   return (
@@ -110,6 +110,18 @@ export default function PolitiqueConfidentialitePage() {
                   </p>
                 </SubSection>
 
+                <SubSection title="Attribution des demandes, après votre consentement">
+                  <p className="mt-3 leading-relaxed text-navy/70">
+                    Si vous acceptez la mesure d&apos;audience et d&apos;attribution, le site mémorise
+                    pendant 30 jours le chemin de la première page visitée, le référent sans ses
+                    paramètres, les paramètres de campagne UTM et les identifiants de clic
+                    publicitaire éventuellement présents. Ces informations sont transmises à
+                    Autologgia uniquement lorsque vous envoyez un formulaire, afin d&apos;identifier
+                    l&apos;origine de votre demande. Elles ne contiennent ni le contenu de votre
+                    navigation complète, ni empreinte numérique créée par Autologgia.
+                  </p>
+                </SubSection>
+
               </div>
             </section>
 
@@ -126,6 +138,7 @@ export default function PolitiqueConfidentialitePage() {
                     "Vous contacter par téléphone ou email dans le cadre de votre demande",
                     "Assurer la sécurité et le bon fonctionnement du site",
                     "Mesurer, avec votre accord, l'audience et l'utilisation du site afin d'en améliorer les contenus et l'expérience",
+                    "Mesurer, avec votre accord, l'origine des demandes envoyées depuis le site",
                   ].map((item) => <Li key={item}>{item}</Li>)}
                 </ul>
                 <p>
@@ -145,7 +158,7 @@ export default function PolitiqueConfidentialitePage() {
                 </p>
                 <ul className="space-y-2">
                   <Li><strong className="font-medium text-navy">Votre consentement</strong> — recueilli explicitement via la case à cocher présente sur nos formulaires, conformément à l'article 6.1.a du RGPD.</Li>
-                  <Li><strong className="font-medium text-navy">Votre consentement Analytics</strong> — recueilli séparément au moyen du bandeau de choix avant l&apos;activation de Google Analytics 4. Vous pouvez le retirer à tout moment.</Li>
+                  <Li><strong className="font-medium text-navy">Votre consentement à la mesure d&apos;audience et d&apos;attribution</strong> — recueilli séparément au moyen du bandeau de choix avant l&apos;activation de Google Analytics 4 et du stockage local d&apos;attribution. Vous pouvez le retirer à tout moment.</Li>
                   <Li><strong className="font-medium text-navy">L'exécution d'un contrat ou de mesures précontractuelles</strong> — lorsque vous nous sollicitez dans le cadre d'un projet d'achat ou de vente (article 6.1.b du RGPD).</Li>
                   <Li><strong className="font-medium text-navy">Notre intérêt légitime</strong> — pour assurer la sécurité du site et prévenir les fraudes (article 6.1.f du RGPD).</Li>
                 </ul>
@@ -164,6 +177,7 @@ export default function PolitiqueConfidentialitePage() {
                   <Li><strong className="font-medium text-navy">Données de contact et d'estimation</strong> — 3 ans à compter du dernier contact ou de la dernière interaction.</Li>
                   <Li><strong className="font-medium text-navy">Données de prospection</strong> — 3 ans à compter de la collecte, ou jusqu'à retrait de votre consentement.</Li>
                   <Li><strong className="font-medium text-navy">Données techniques</strong> — 12 mois conformément aux obligations légales applicables.</Li>
+                  <Li><strong className="font-medium text-navy">Attribution conservée dans votre navigateur</strong> — 30 jours au maximum, sans prolongation lors de vos visites suivantes.</Li>
                 </ul>
                 <p>
                   À l'expiration de ces délais, vos données sont supprimées ou anonymisées.
@@ -184,6 +198,7 @@ export default function PolitiqueConfidentialitePage() {
                   <Li><strong className="font-medium text-navy">Vercel Inc.</strong> (hébergement du site) — Politique de confidentialité disponible sur vercel.com</Li>
                   <Li><strong className="font-medium text-navy">Resend Inc.</strong> (envoi d'e-mails transactionnels) — Politique disponible sur resend.com</Li>
                   <Li><strong className="font-medium text-navy">Sanity AS</strong> (gestion du contenu CMS) — Politique disponible sur sanity.io</Li>
+                  <Li><strong className="font-medium text-navy">Supabase Inc.</strong> (hébergement de la base de données du CMS et du suivi des demandes) — Politique disponible sur supabase.com/privacy</Li>
                   <Li><strong className="font-medium text-navy">Google Analytics 4</strong> (mesure d&apos;audience, uniquement après consentement) — Politique disponible sur policies.google.com/privacy</Li>
                 </ul>
                 <p>
@@ -236,9 +251,9 @@ export default function PolitiqueConfidentialitePage() {
               <div className="mt-5 space-y-4 leading-relaxed text-navy/70">
                 <p>
                   Le site utilise un stockage local strictement nécessaire pour mémoriser votre
-                  choix relatif à la mesure d&apos;audience. Ce choix ne contient aucune donnée
-                  personnelle et reste enregistré dans votre navigateur jusqu&apos;à ce que vous le
-                  modifiiez ou supprimiez les données locales du site.
+                  choix relatif à la mesure d&apos;audience et d&apos;attribution. Ce choix ne contient
+                  aucune donnée personnelle et reste enregistré dans votre navigateur jusqu&apos;à ce
+                  que vous le modifiiez ou supprimiez les données locales du site.
                 </p>
                 <p>
                   Avec votre accord, Autologgia utilise{" "}
@@ -247,6 +262,12 @@ export default function PolitiqueConfidentialitePage() {
                   et de comprendre la manière dont le site est utilisé. Après acceptation, Google
                   Analytics peut déposer ou lire des cookies de mesure d&apos;audience et recevoir les
                   données techniques et de navigation décrites ci-dessus.
+                </p>
+                <p>
+                  Avec le même accord, le site enregistre dans votre navigateur les informations
+                  d&apos;attribution décrites à la section 2 pendant 30 jours. Elles sont supprimées si
+                  vous refusez ou retirez votre consentement, et ne sont transmises au système
+                  interne de suivi d&apos;Autologgia qu&apos;au moment où vous envoyez un formulaire.
                 </p>
                 <p>
                   Le tag Google Analytics n&apos;est pas chargé avant votre accord. Le bouton

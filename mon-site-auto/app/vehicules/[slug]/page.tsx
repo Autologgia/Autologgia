@@ -99,7 +99,7 @@ export default async function VehiclePage({ params }: Props) {
 
             {/* Galerie */}
             <section>
-              <VehicleGallery images={galleryImages} />
+              <VehicleGallery key={car.slug} images={galleryImages} />
             </section>
 
             {/* Panneau d'informations — reste bleu foncé */}

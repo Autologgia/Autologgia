@@ -37,6 +37,8 @@ export default function RecentVehiclesGrid({ cars }: { cars: Car[] }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(FAVORITES_KEY);
+      // Initialisation navigateur uniquement, volontairement après hydratation.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (stored) setFavorites(JSON.parse(stored));
     } catch {}
   }, []);
@@ -44,6 +46,8 @@ export default function RecentVehiclesGrid({ cars }: { cars: Car[] }) {
   // ── prefers-reduced-motion ─────────────────────────────────────────────────
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    // Synchronisation initiale avec l'état du média navigateur.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setReducedMotion(mq.matches);
     const onChange = () => setReducedMotion(mq.matches);
     mq.addEventListener("change", onChange);

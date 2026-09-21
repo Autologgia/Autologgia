@@ -61,15 +61,15 @@ export default function AnalyticsConsent() {
                 id="analytics-consent-title"
                 className="font-heading text-xl font-medium text-white"
               >
-                Mesure d&apos;audience
+                Mesure d&apos;audience et attribution
               </p>
               <p
                 id="analytics-consent-description"
                 className="mt-2 text-sm leading-relaxed text-gray-300"
               >
-                Avec votre accord, Autologgia utilise Google Analytics 4 pour comprendre
-                l&apos;utilisation du site et améliorer votre expérience. Aucun suivi Analytics
-                n&apos;est chargé si vous refusez. Consultez notre{" "}
+                Avec votre accord, Autologgia utilise Google Analytics 4 et mémorise l&apos;origine
+                de votre visite pour mesurer l&apos;audience et l&apos;origine des demandes. Aucun de ces
+                suivis n&apos;est activé si vous refusez. Consultez notre{" "}
                 <Link
                   href="/politique-confidentialite#cookies"
                   className="text-[#C9A84C] underline underline-offset-2 transition hover:text-[#d4b96a]"

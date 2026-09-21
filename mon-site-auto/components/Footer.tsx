@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Footer() {
   return (
@@ -21,10 +22,10 @@ export default function Footer() {
 
           <div className="flex flex-col gap-6">
             <nav className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm text-gray-500 md:flex md:flex-wrap md:gap-x-8">
-              <a href="/catalogue" className="transition hover:text-white">Catalogue</a>
-              <a href="/estimation" className="transition hover:text-white">Estimation</a>
-              <a href="/#histoire" className="transition hover:text-white">Notre histoire</a>
-              <a href="/contact" className="transition hover:text-white">Contact</a>
+              <Link href="/catalogue" className="transition hover:text-white">Catalogue</Link>
+              <Link href="/estimation" className="transition hover:text-white">Estimation</Link>
+              <Link href="/#histoire" className="transition hover:text-white">Notre histoire</Link>
+              <Link href="/contact" className="transition hover:text-white">Contact</Link>
             </nav>
 
             {/* Réseaux sociaux */}
@@ -73,8 +74,8 @@ export default function Footer() {
         <div className="mt-10 flex flex-col gap-3 border-t border-white/5 pt-8 text-xs text-gray-600 md:flex-row md:items-center md:justify-between">
           <p>© {new Date().getFullYear()} Autologgia – FRERES ROUX AUTO. Tous droits réservés.</p>
           <nav className="flex flex-wrap gap-x-5 gap-y-1.5">
-            <a href="/mentions-legales" className="transition hover:text-gray-400">Mentions légales</a>
-            <a href="/politique-confidentialite" className="transition hover:text-gray-400">Politique de confidentialité</a>
+            <Link href="/mentions-legales" className="transition hover:text-gray-400">Mentions légales</Link>
+            <Link href="/politique-confidentialite" className="transition hover:text-gray-400">Politique de confidentialité</Link>
           </nav>
         </div>
       </div>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import PortableTextContent from "@/components/PortableTextContent";
 import type { PortableTextBlock } from "@portabletext/types";
 import { trackGA4Event } from "@/lib/analytics";
+import { getAttributionForSubmit } from "@/lib/attribution";
 
 type Phase = "unavailable" | "locked" | "form" | "unlocked";
 type FormStatus = "idle" | "loading" | "error";
@@ -26,6 +27,7 @@ export default function HistoryGate({ carName, vehicleSlug, historyText, history
   const [formStatus, setFormStatus] = useState<FormStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [unlockedFileUrl, setUnlockedFileUrl] = useState(historyFileUrl);
+  const submissionIdRef = useRef<string | null>(null);
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,6 +35,7 @@ export default function HistoryGate({ carName, vehicleSlug, historyText, history
     setErrorMessage("");
 
     const form = e.currentTarget;
+    const submissionId = submissionIdRef.current ??= crypto.randomUUID();
     const name = (form.elements.namedItem("name") as HTMLInputElement).value;
     const phone = (form.elements.namedItem("phone") as HTMLInputElement).value;
     const email = (form.elements.namedItem("email") as HTMLInputElement).value;
@@ -42,11 +45,16 @@ export default function HistoryGate({ carName, vehicleSlug, historyText, history
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          submissionId,
+          formKey: "vehicle_history",
           name,
           phone,
           email,
           message: `Demande d'accès à l'historique du véhicule : ${carName}.`,
           ...(hasHistoryFile && !historyFileUrl && vehicleSlug ? { historyVehicleSlug: vehicleSlug } : {}),
+          vehicleName: carName,
+          ...(vehicleSlug ? { vehicleSlug } : {}),
+          attribution: getAttributionForSubmit(),
         }),
       });
 
@@ -72,6 +80,7 @@ export default function HistoryGate({ carName, vehicleSlug, historyText, history
           setUnlockedFileUrl(historyResult.url);
         }
         setPhase("unlocked");
+        submissionIdRef.current = null;
       } else {
         setFormStatus("error");
         setErrorMessage(result.error ?? "Une erreur est survenue.");

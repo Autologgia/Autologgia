@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { trackGA4Event } from "@/lib/analytics";
+import { getAttributionForSubmit } from "@/lib/attribution";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -11,12 +12,15 @@ const inputCls =
 export default function ContactForm({
   vehicule,
   demande,
+  vehicleSlug,
 }: {
   vehicule?: string;
   demande?: string;
+  vehicleSlug?: string;
 }) {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const submissionIdRef = useRef<string | null>(null);
 
   function defaultMessage() {
     if (demande === "historique" && vehicule)
@@ -32,12 +36,18 @@ export default function ContactForm({
     setErrorMessage("");
 
     const form = e.currentTarget;
+    const submissionId = submissionIdRef.current ??= crypto.randomUUID();
     const data = {
+      submissionId,
+      formKey: demande === "historique" ? "vehicle_history" : vehicule || vehicleSlug ? "vehicle_contact" : "general_contact",
       name: (form.elements.namedItem("name") as HTMLInputElement).value,
       phone: (form.elements.namedItem("phone") as HTMLInputElement).value,
       email: (form.elements.namedItem("email") as HTMLInputElement).value,
       message: (form.elements.namedItem("message") as HTMLTextAreaElement).value,
       website: (form.elements.namedItem("website") as HTMLInputElement)?.value ?? "",
+      ...(vehicule ? { vehicleName: vehicule } : {}),
+      ...(vehicleSlug ? { vehicleSlug } : {}),
+      attribution: getAttributionForSubmit(),
     };
 
     try {
@@ -57,6 +67,7 @@ export default function ContactForm({
           });
         }
         setStatus("success");
+        submissionIdRef.current = null;
         form.reset();
       } else {
         setStatus("error");

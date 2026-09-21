@@ -58,10 +58,7 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
     };
   }, []);
 
-  // Reset à 0 quand le véhicule change
-  useEffect(() => {
-    setCurrentImageIndex(0);
-  }, [car.slug, images.length]);
+  const displayedImageIndex = currentImageIndex < images.length ? currentImageIndex : 0;
 
   // Rotation automatique mobile — 2 500 ms, transition identique à VehicleGallery
   useEffect(() => {
@@ -89,7 +86,7 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
                 alt={image.alt}
                 fill
                 className={`object-cover transition-opacity duration-700 ease-in-out ${
-                  index === currentImageIndex ? "opacity-100" : "opacity-0"
+                  index === displayedImageIndex ? "opacity-100" : "opacity-0"
                 }`}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 priority={index === 0 && priority}

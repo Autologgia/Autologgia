@@ -42,13 +42,6 @@ export default function VehicleGallery({ images }: { images: GalleryImage[] }) {
     return () => clearInterval(interval);
   }, [total, isHovered, isRailInteracting, showAllImages, timerKey]);
 
-  useEffect(() => {
-    setActiveIndex(0);
-    setMobileThumbStart(0);
-    setDesktopThumbStart(0);
-    setShowAllImages(false);
-  }, [images]);
-
   if (total === 0) return null;
 
   // Navigation manuelle : reset le timer à 0

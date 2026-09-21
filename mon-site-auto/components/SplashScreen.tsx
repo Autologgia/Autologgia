@@ -19,6 +19,8 @@ export default function SplashScreen() {
     if (!isDesktop || reducedMotion || seen) return;
 
     localStorage.setItem(SPLASH_KEY, "1");
+    // Le splash dépend exclusivement d'informations disponibles après hydratation.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShow(true);
 
     const t1 = setTimeout(() => setLeaving(true), T_EXIT_START);
