@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { cmsSiteKey, vehicleTag, vehiclesTag } from "@/lib/cms/tags";
 
 // Invalidation « push » déclenchée par Synergy après chaque écriture de
@@ -58,6 +58,15 @@ export async function POST(request: Request) {
   // que la modification faite dans Synergy soit visible au plus vite.
   // `updateTag` n'est pas utilisable ici (réservé aux Server Actions).
   for (const tag of tags) revalidateTag(tag, { expire: 0 });
+
+  // Filet complémentaire : purge aussi le Full Route Cache des pages ISR
+  // (revalidate = 300) qui dépendent de ces données. revalidateTag() seul ne
+  // garantit pas que la prochaine requête serve du HTML frais ; revalidatePath()
+  // force la régénération de la page elle-même au prochain accès.
+  revalidatePath("/");
+  revalidatePath("/catalogue");
+  revalidatePath("/sitemap.xml");
+  if (slug) revalidatePath(`/vehicules/${slug}`);
 
   return Response.json(
     { revalidated: true, tags, now: Date.now() },

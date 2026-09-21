@@ -3,9 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // Routes serveur du pont Autologgia <-> Synergy : média, PDF d'historique, revalidation.
 
 const revalidateTag = vi.hoisted(() => vi.fn());
+const revalidatePath = vi.hoisted(() => vi.fn());
 const cookieValue = vi.hoisted(() => ({ value: undefined as string | undefined }));
 
-vi.mock("next/cache", () => ({ revalidateTag }));
+vi.mock("next/cache", () => ({ revalidateTag, revalidatePath }));
 vi.mock("next/headers", () => ({
   cookies: async () => ({ get: () => (cookieValue.value ? { value: cookieValue.value } : undefined) }),
 }));
@@ -27,6 +28,7 @@ const savedEnv = { ...process.env };
 beforeEach(() => {
   fetchMock.mockReset();
   revalidateTag.mockReset();
+  revalidatePath.mockReset();
   cookieValue.value = undefined;
   vi.stubGlobal("fetch", fetchMock);
   process.env.CMS_SOURCE = "supabase";
@@ -187,17 +189,24 @@ describe("POST /api/cms/revalidate (invalidation poussée par Synergy)", () => {
     expect(revalidateTag).not.toHaveBeenCalled();
   });
 
-  it("purge la liste seule (sans slug) : immédiate, expire=0", async () => {
+  it("purge la liste seule (sans slug) : immédiate, expire=0, + Full Route Cache", async () => {
     const response = await post({ siteKey: "autologgia", resource: "vehicles" });
     expect(response.status).toBe(200);
     expect(revalidateTag).toHaveBeenCalledTimes(1);
     expect(revalidateTag).toHaveBeenCalledWith("cms:autologgia:vehicles", { expire: 0 });
+    expect(revalidatePath.mock.calls.map(([path]) => path)).toEqual(["/", "/catalogue", "/sitemap.xml"]);
   });
 
-  it("purge la liste ET la fiche modifiée", async () => {
+  it("purge la liste ET la fiche modifiée, y compris la page véhicule", async () => {
     const response = await post({ siteKey: "autologgia", resource: "vehicles", slug: "citroen-c1", reason: "vehicle.updated" });
     expect(response.status).toBe(200);
     expect(revalidateTag.mock.calls.map(([tag]) => tag)).toEqual(["cms:autologgia:vehicles", "cms:autologgia:vehicle:citroen-c1"]);
+    expect(revalidatePath.mock.calls.map(([path]) => path)).toEqual([
+      "/",
+      "/catalogue",
+      "/sitemap.xml",
+      "/vehicules/citroen-c1",
+    ]);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(JSON.stringify(await response.json())).not.toContain(REVALIDATE_SECRET);
   });
