@@ -1,12 +1,12 @@
 import type { MetadataRoute } from "next";
 
-import { sanityFetch } from "@/lib/sanity";
+import { getSitemapVehicles } from "@/lib/cms/vehicles";
 
 const BASE_URL = "https://www.autologgia.fr";
 
 type SitemapVehicle = {
   slug: string;
-  _updatedAt: string;
+  updatedAt: string;
 };
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -51,16 +51,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const vehicles = await sanityFetch<SitemapVehicle[]>(`
-      *[_type == "car" && defined(slug.current)] | order(slug.current asc) {
-        "slug": slug.current,
-        _updatedAt
-      }
-    `);
+    const vehicles: SitemapVehicle[] = await getSitemapVehicles();
 
     const vehiclePages: MetadataRoute.Sitemap = vehicles.map((vehicle) => ({
       url: `${BASE_URL}/vehicules/${encodeURIComponent(vehicle.slug)}`,
-      lastModified: new Date(vehicle._updatedAt),
+      lastModified: new Date(vehicle.updatedAt),
       changeFrequency: "weekly",
       priority: 0.8,
     }));

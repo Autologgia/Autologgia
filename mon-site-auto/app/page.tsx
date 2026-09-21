@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { Metadata } from "next";
-import { sanityFetch } from "@/lib/sanity";
+import { getRecentVehicles } from "@/lib/cms/vehicles";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RecentVehiclesGrid from "@/components/RecentVehiclesGrid";
@@ -16,24 +16,12 @@ export const metadata: Metadata = {
     "Achetez, vendez ou estimez votre véhicule premium avec Autologgia. Sélection rigoureuse, transparence totale, accompagnement personnalisé.",
 };
 
-export const revalidate = 60;
+// Filet de sécurité : le rafraîchissement rapide passe par revalidateTag
+// (POST /api/cms/revalidate déclenché par Synergy). Cf. lib/cms/tags.ts.
+export const revalidate = 300;
 
 export default async function Home() {
-  const cars = await sanityFetch<Car[]>(`
-    *[_type == "car"] | order(_createdAt desc) [0..2] {
-      name,
-      "slug": slug.current,
-      price,
-      numericPrice,
-      year,
-      mileage,
-      transmission,
-      fuel,
-      power,
-      "images": images[defined(asset)],
-      status
-    }
-  `);
+  const cars: Car[] = await getRecentVehicles();
 
   return (
     <main className="min-h-screen">

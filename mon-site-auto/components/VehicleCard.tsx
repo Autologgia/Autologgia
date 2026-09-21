@@ -3,10 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { urlFor } from "@/lib/sanity";
 import type { Car } from "@/lib/types";
 import { formatCarPrice, formatMileage, formatPower } from "@/lib/format";
 import { getVehicleStatusInfo } from "@/lib/vehicle-status";
+import { getVehicleImageAlt, getVehicleImageUrl } from "@/lib/vehicle-images";
 
 interface Props {
   car: Car;
@@ -16,18 +16,19 @@ interface Props {
 }
 
 export default function VehicleCard({ car, isFavorite, onToggleFavorite, priority = false }: Props) {
-  const imageUrls = useMemo(
+  const images = useMemo(
     () =>
-      (car.images ?? []).map((image) =>
-        urlFor(image).width(800).height(600).url()
-      ),
-    [car.images]
+      (car.images ?? []).map((image) => ({
+        src: getVehicleImageUrl(image, 800, 600),
+        alt: getVehicleImageAlt(image, car.name),
+      })),
+    [car.images, car.name]
   );
 
   const [isMobile, setIsMobile] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const statusInfo = getVehicleStatusInfo(car.status);
-  const hasMultipleImages = imageUrls.length > 1;
+  const hasMultipleImages = images.length > 1;
   const formattedPrice = formatCarPrice(car.numericPrice, car.price);
   const formattedMileage = formatMileage(car.mileage);
   const formattedPower = formatPower(car.power);
@@ -60,32 +61,32 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
   // Reset à 0 quand le véhicule change
   useEffect(() => {
     setCurrentImageIndex(0);
-  }, [car.slug, imageUrls.length]);
+  }, [car.slug, images.length]);
 
   // Rotation automatique mobile — 2 500 ms, transition identique à VehicleGallery
   useEffect(() => {
     if (!isMobile || !hasMultipleImages) return;
 
     const interval = window.setInterval(() => {
-      setCurrentImageIndex((current) => (current + 1) % imageUrls.length);
+      setCurrentImageIndex((current) => (current + 1) % images.length);
     }, 2500);
 
     return () => window.clearInterval(interval);
-  }, [hasMultipleImages, imageUrls.length, isMobile]);
+  }, [hasMultipleImages, images.length, isMobile]);
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/5 bg-navy-light transition-all duration-500 hover:-translate-y-1.5 hover:border-[#C9A84C]/30 hover:shadow-[0_16px_48px_rgba(201,168,76,0.12)]">
 
       {/* ── Image ── */}
       <div className="relative h-56 overflow-hidden bg-navy-mid">
-        {imageUrls.length > 0 ? (
+        {images.length > 0 ? (
           isMobile && hasMultipleImages ? (
             // Mobile : toutes les images empilées, pur cross-fade opacity — identique à VehicleGallery
-            imageUrls.map((src, index) => (
+            images.map((image, index) => (
               <Image
                 key={`${car.slug}-${index}`}
-                src={src}
-                alt={car.name}
+                src={image.src}
+                alt={image.alt}
                 fill
                 className={`object-cover transition-opacity duration-700 ease-in-out ${
                   index === currentImageIndex ? "opacity-100" : "opacity-0"
@@ -97,8 +98,8 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
           ) : (
             // Desktop : image statique avec hover scale
             <Image
-              src={imageUrls[0]}
-              alt={car.name}
+              src={images[0].src}
+              alt={images[0].alt}
               fill
               className="object-cover transition duration-700 group-hover:scale-105"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
