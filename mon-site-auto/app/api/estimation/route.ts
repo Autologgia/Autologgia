@@ -10,7 +10,12 @@ import {
 import { forwardLeadToSynergy } from "@/lib/synergy-leads";
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
-const TO = "autologgia.web@gmail.com";
+// Destinataire réel en prod (fallback). Doit rester aligné sur /api/contact :
+// une clé Resend en mode test n'autorise l'envoi qu'à l'adresse du compte, donc
+// une valeur codée en dur ici faisait rejeter l'email (validation_error) en
+// Preview -- et le 502 qui s'ensuit coupe la route AVANT forwardLeadToSynergy,
+// donc aucun prospect n'arrivait non plus.
+const TO = process.env.RESEND_TO_EMAIL ?? "autologgia.web@gmail.com";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[0-9+().\-\s]{6,30}$/;
