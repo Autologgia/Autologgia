@@ -119,11 +119,6 @@ export async function POST(req: Request) {
     return jsonError("Véhicule invalide.");
   }
 
-  if (!process.env.RESEND_API_KEY) {
-    console.error("[api/contact] missing RESEND_API_KEY");
-    return jsonError("Impossible d'envoyer la demande pour le moment.", 500);
-  }
-
   // Un rejeu de la même soumission (réessai après erreur réseau) réutilise la
   // même clé : ni email ni prospect dupliqués.
   const submissionId = cleanSubmissionId(raw.submissionId) ?? newSubmissionId();
@@ -133,7 +128,6 @@ export async function POST(req: Request) {
   );
   const attribution = cleanAttribution(raw.attribution);
 
-  const resend = new Resend(process.env.RESEND_API_KEY);
   const emailSubject = sujet
     ? `Nouveau contact - [${sujet}] ${name}`
     : `Nouveau contact - ${name}`;
@@ -149,24 +143,49 @@ export async function POST(req: Request) {
     message || "(Pas de message supplementaire)",
   ].filter((line): line is string => line !== null);
 
-  try {
-    const { error: resendError } = await resend.emails.send(
-      {
-        from: FROM,
-        to: TO,
-        subject: emailSubject,
-        text: bodyLines.join("\n"),
-      },
-      { idempotencyKey: `autologgia-contact-${submissionId}` },
-    );
-    if (resendError) {
-      console.error("[api/contact] resend rejected email", resendError.message);
-      return jsonError("Impossible d'envoyer la demande pour le moment.", 502);
+  // Les deux canaux sont tentés INDÉPENDAMMENT et en parallèle : perdre le
+  // prospect CRM parce que l'email a échoué (ou l'inverse) reviendrait à perdre
+  // la demande d'un client. Le visiteur ne voit une erreur que si les DEUX ont
+  // échoué ; sinon la demande est bien arrivée quelque part, et le canal en
+  // échec est journalisé pour diagnostic.
+  //
+  // L'idempotence est portée par `submissionId`, que le client conserve tant
+  // que la soumission n'a pas réussi : un réessai réutilise la même clé et ne
+  // peut donc ni redoubler l'email (idempotencyKey Resend) ni le prospect
+  // (déduplication de ingest_lead côté Synergy), y compris quand un seul des
+  // deux canaux avait abouti au tour précédent.
+  const sendEmail = async (): Promise<boolean> => {
+    if (!process.env.RESEND_API_KEY) {
+      console.error("[api/contact] missing RESEND_API_KEY");
+      return false;
     }
+    try {
+      const { error: resendError } = await new Resend(process.env.RESEND_API_KEY).emails.send(
+        {
+          from: FROM,
+          to: TO,
+          subject: emailSubject,
+          text: bodyLines.join("\n"),
+        },
+        { idempotencyKey: `autologgia-contact-${submissionId}` },
+      );
+      if (resendError) {
+        console.error("[api/contact] resend rejected email", resendError.message);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error(
+        "[api/contact] resend send failed",
+        error instanceof Error ? error.message : "unknown error",
+      );
+      return false;
+    }
+  };
 
-    // Best-effort : Synergy indisponible ne doit jamais dégrader la réponse au
-    // visiteur, dont la demande est déjà partie par email.
-    await forwardLeadToSynergy({
+  const [emailSent, leadForwarded] = await Promise.all([
+    sendEmail(),
+    forwardLeadToSynergy({
       name,
       source: LEAD_SOURCE,
       formKey,
@@ -185,22 +204,22 @@ export async function POST(req: Request) {
         : {}),
       ...(attribution ? { attribution } : {}),
       idempotencyKey: submissionId,
-    });
+    }),
+  ]);
 
-    const response = Response.json({ success: true });
-    if (historyVehicleSlug && getCmsSource() === "supabase") {
-      const access = createHistoryAccessToken(historyVehicleSlug);
-      response.headers.append(
-        "Set-Cookie",
-        `${historyAccessCookieName(historyVehicleSlug)}=${access.token}; Max-Age=${access.maxAge}; Path=/api/vehicle-history/${historyVehicleSlug}; HttpOnly; SameSite=Strict${process.env.NODE_ENV === "production" ? "; Secure" : ""}`,
-      );
-    }
-    return response;
-  } catch (error) {
-    console.error(
-      "[api/contact] resend send failed",
-      error instanceof Error ? error.message : "unknown error"
-    );
-    return jsonError("Impossible d'envoyer la demande pour le moment.", 500);
+  // Les deux canaux ont échoué : la demande n'est arrivée nulle part, le
+  // visiteur doit pouvoir réessayer (avec le même submissionId).
+  if (!emailSent && !leadForwarded) {
+    return jsonError("Impossible d'envoyer la demande pour le moment.", 502);
   }
+
+  const response = Response.json({ success: true });
+  if (historyVehicleSlug && getCmsSource() === "supabase") {
+    const access = createHistoryAccessToken(historyVehicleSlug);
+    response.headers.append(
+      "Set-Cookie",
+      `${historyAccessCookieName(historyVehicleSlug)}=${access.token}; Max-Age=${access.maxAge}; Path=/api/vehicle-history/${historyVehicleSlug}; HttpOnly; SameSite=Strict${process.env.NODE_ENV === "production" ? "; Secure" : ""}`,
+    );
+  }
+  return response;
 }

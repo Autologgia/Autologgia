@@ -6,6 +6,11 @@ import "server-only";
  * JAMAIS empêcher l'envoi de l'email de confirmation existant (Resend) ni
  * faire échouer la réponse au visiteur — seulement journalisée.
  *
+ * Retourne `true` uniquement si Synergy a bien accepté le lead. Les routes
+ * s'en servent pour ne renvoyer une erreur au visiteur que si l'email ET
+ * l'ingestion ont échoué : un seul des deux canaux suffit à ne pas perdre la
+ * demande. Aucune exception n'est propagée, l'appelant n'a rien à try/catch.
+ *
  * Réutilise la même base d'URL que l'intégration CMS existante
  * (SYNERGY_CMS_API_URL) : un seul Synergy, deux usages distincts (lecture
  * véhicules vs écriture de leads), chacun avec son propre token dédié.
@@ -52,19 +57,19 @@ export type SynergyLeadPayload = {
   idempotencyKey: string;
 };
 
-export async function forwardLeadToSynergy(payload: SynergyLeadPayload): Promise<void> {
+export async function forwardLeadToSynergy(payload: SynergyLeadPayload): Promise<boolean> {
   const baseUrl = process.env.SYNERGY_CMS_API_URL?.trim().replace(/\/$/, "");
   const token = process.env.SYNERGY_LEAD_INGESTION_TOKEN?.trim();
   if (!baseUrl || !token) {
     console.error("[synergy-leads] ingestion not configured", { submissionId: payload.idempotencyKey });
-    return;
+    return false;
   }
 
   const body = JSON.stringify(payload);
   if (Buffer.byteLength(body, "utf8") > MAX_BODY_BYTES) {
     // Inutile de faire l'aller-retour : Synergy répondrait 413.
     console.error("[synergy-leads] payload too large", { submissionId: payload.idempotencyKey });
-    return;
+    return false;
   }
 
   try {
@@ -76,8 +81,11 @@ export async function forwardLeadToSynergy(payload: SynergyLeadPayload): Promise
     });
     if (!response.ok) {
       console.error("[synergy-leads] ingestion rejected", { submissionId: payload.idempotencyKey, status: response.status });
+      return false;
     }
+    return true;
   } catch (error) {
     console.error("[synergy-leads] forward failed", { submissionId: payload.idempotencyKey, reason: error instanceof Error ? error.name : "unknown" });
+    return false;
   }
 }

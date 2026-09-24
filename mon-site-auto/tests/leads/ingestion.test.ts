@@ -109,15 +109,17 @@ describe("Autologgia -> Synergy", () => {
     log.mockRestore();
   });
 
-  it("does not call Synergy when Resend rejects the email", async () => {
+  it("still calls Synergy when Resend rejects the email", async () => {
+    // Les deux canaux sont desormais independants : un email refuse ne doit plus
+    // faire perdre le prospect. Matrice complete dans resilience.test.ts.
     send.mockResolvedValueOnce({ data: null, error: { name: "validation_error" } });
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     const response = await estimation(request("/api/estimation", {
       submissionId, brand: "Porsche", model: "911", year: "2020", mileage: "42000", power: "450",
       fuel: "essence", transmission: "automatique", etat: "bon", phone: "+33612345678",
     }));
-    expect(response.status).toBe(502);
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(forwardedPayload()).toMatchObject({ formKey: "vehicle_estimation", idempotencyKey: submissionId });
     log.mockRestore();
   });
 

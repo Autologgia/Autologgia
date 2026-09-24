@@ -129,19 +129,20 @@ describe("destinataire Resend — /api/contact et /api/estimation alignés", () 
     });
   });
 
-  it("un rejet Resend renvoie 502 et court-circuite Synergy — le couplage est documenté", async () => {
-    // C'est exactement ce que la Preview a produit : l'email refusé empêchait
-    // aussi l'ingestion du lead. Ce test fige le comportement actuel ; si l'on
-    // décide un jour de découpler (forward même sans email), il faudra le
-    // mettre à jour sciemment.
+  it("un rejet Resend ne bloque plus l'ingestion du prospect", async () => {
+    // Ce test remplace celui qui figeait l'ancien couplage : depuis le
+    // découplage des deux canaux, un email refusé n'empêche plus le lead
+    // d'atteindre Synergy. La matrice complète est dans resilience.test.ts.
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    process.env.RESEND_TO_EMAIL = "compte.resend@example.test";
     send.mockResolvedValue({ data: null, error: { name: "validation_error", message: "refusé" } });
     const { estimation } = await loadRoutes();
 
     const response = await estimation(request("/api/estimation", estimationPayload));
 
-    expect(response.status).toBe(502);
-    expect(vi.mocked(global.fetch)).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    const call = vi.mocked(global.fetch).mock.calls[0];
+    expect(call?.[0]).toBe("https://synergy.test/api/public/leads");
     log.mockRestore();
   });
 });
