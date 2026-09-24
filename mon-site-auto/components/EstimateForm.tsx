@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import { trackGA4Event } from "@/lib/analytics";
+import { getAttributionForSubmit } from "@/lib/attribution";
+import { newSubmissionId } from "@/lib/lead-submission";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -37,6 +39,8 @@ export default function EstimateForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [photoCount, setPhotoCount] = useState(0);
+  // Conservé tant que l'envoi n'a pas abouti : un réessai ne crée pas de doublon.
+  const submissionIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
@@ -74,6 +78,8 @@ export default function EstimateForm() {
       message: get("message"),
       website: get("website"),
       photos,
+      submissionId: submissionIdRef.current ?? (submissionIdRef.current = newSubmissionId()),
+      attribution: getAttributionForSubmit(),
     };
 
     try {
@@ -86,6 +92,7 @@ export default function EstimateForm() {
       const result = await res.json();
 
       if (result.success) {
+        submissionIdRef.current = null;
         if (res.ok && !data.website.trim()) {
           trackGA4Event("generate_lead", {
             form_name: "vehicle_estimation",

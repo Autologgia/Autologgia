@@ -3,6 +3,7 @@ import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import StickyContact from "@/components/StickyContact";
 import AnalyticsConsent from "@/components/AnalyticsConsent";
+import AttributionCapture from "@/components/AttributionCapture";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -41,6 +42,7 @@ export default function RootLayout({
         {children}
         <StickyContact />
         <AnalyticsConsent />
+        <AttributionCapture />
       </body>
     </html>
   );

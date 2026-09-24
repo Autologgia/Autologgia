@@ -2,6 +2,14 @@ import { Resend } from "resend";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getCmsSource } from "@/lib/cms/config";
 import { createHistoryAccessToken, historyAccessCookieName } from "@/lib/cms/history-access";
+import {
+  LEAD_SOURCE,
+  cleanAttribution,
+  cleanFormKey,
+  cleanSubmissionId,
+  newSubmissionId,
+} from "@/lib/lead-context";
+import { forwardLeadToSynergy } from "@/lib/synergy-leads";
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
 // Destinataire réel en prod (fallback). Peut être surchargé via RESEND_TO_EMAIL,
@@ -11,7 +19,21 @@ const TO = process.env.RESEND_TO_EMAIL ?? "autologgia.web@gmail.com";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[0-9+().\-\s]{6,30}$/;
 const MAX_BODY_BYTES = 64 * 1024;
-const ALLOWED_FIELDS = new Set(["name", "phone", "email", "message", "sujet", "website", "historyVehicleSlug"]);
+const ALLOWED_FIELDS = new Set([
+  "name",
+  "phone",
+  "email",
+  "message",
+  "sujet",
+  "website",
+  "historyVehicleSlug",
+  // Contexte transmis à Synergy (voir lib/lead-context.ts).
+  "submissionId",
+  "formKey",
+  "vehicleSlug",
+  "vehicleName",
+  "attribution",
+]);
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function jsonError(message: string, status = 400) {
@@ -65,6 +87,8 @@ export async function POST(req: Request) {
   const sujet = cleanSingleLine(raw.sujet, 120);
   const website = cleanSingleLine(raw.website, 120);
   const historyVehicleSlug = cleanSingleLine(raw.historyVehicleSlug, 200);
+  const vehicleSlug = cleanSingleLine(raw.vehicleSlug, 200);
+  const vehicleName = cleanSingleLine(raw.vehicleName, 200);
 
   // Honeypot: bots fill this field, humans don't.
   if (website) {
@@ -91,10 +115,23 @@ export async function POST(req: Request) {
     return jsonError("Véhicule invalide.");
   }
 
+  if (vehicleSlug && !SLUG_PATTERN.test(vehicleSlug)) {
+    return jsonError("Véhicule invalide.");
+  }
+
   if (!process.env.RESEND_API_KEY) {
     console.error("[api/contact] missing RESEND_API_KEY");
     return jsonError("Impossible d'envoyer la demande pour le moment.", 500);
   }
+
+  // Un rejeu de la même soumission (réessai après erreur réseau) réutilise la
+  // même clé : ni email ni prospect dupliqués.
+  const submissionId = cleanSubmissionId(raw.submissionId) ?? newSubmissionId();
+  const formKey = cleanFormKey(
+    raw.formKey,
+    historyVehicleSlug || vehicleSlug ? "vehicle_history" : "general_contact",
+  );
+  const attribution = cleanAttribution(raw.attribution);
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   const emailSubject = sujet
@@ -106,22 +143,49 @@ export async function POST(req: Request) {
     `Telephone : ${phone}`,
     `Email : ${email || "non renseigne"}`,
     sujet ? `Sujet : ${sujet}` : null,
+    vehicleName ? `Vehicule : ${vehicleName}` : null,
     "",
     "Message :",
     message || "(Pas de message supplementaire)",
   ].filter((line): line is string => line !== null);
 
   try {
-    const { error: resendError } = await resend.emails.send({
-      from: FROM,
-      to: TO,
-      subject: emailSubject,
-      text: bodyLines.join("\n"),
-    });
+    const { error: resendError } = await resend.emails.send(
+      {
+        from: FROM,
+        to: TO,
+        subject: emailSubject,
+        text: bodyLines.join("\n"),
+      },
+      { idempotencyKey: `autologgia-contact-${submissionId}` },
+    );
     if (resendError) {
       console.error("[api/contact] resend rejected email", resendError.message);
       return jsonError("Impossible d'envoyer la demande pour le moment.", 502);
     }
+
+    // Best-effort : Synergy indisponible ne doit jamais dégrader la réponse au
+    // visiteur, dont la demande est déjà partie par email.
+    await forwardLeadToSynergy({
+      name,
+      source: LEAD_SOURCE,
+      formKey,
+      ...(email ? { email } : {}),
+      phone,
+      ...(message ? { message } : {}),
+      ...(sujet ? { subject: sujet } : {}),
+      ...(vehicleSlug || vehicleName
+        ? {
+            product: {
+              type: "vehicle",
+              ...(vehicleSlug ? { slug: vehicleSlug } : {}),
+              ...(vehicleName ? { label: vehicleName } : {}),
+            },
+          }
+        : {}),
+      ...(attribution ? { attribution } : {}),
+      idempotencyKey: submissionId,
+    });
 
     const response = Response.json({ success: true });
     if (historyVehicleSlug && getCmsSource() === "supabase") {

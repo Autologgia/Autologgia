@@ -1,6 +1,13 @@
 import { Resend } from "resend";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanityWriteToken, writeClient } from "@/lib/sanity-write";
+import {
+  LEAD_SOURCE,
+  cleanAttribution,
+  cleanSubmissionId,
+  newSubmissionId,
+} from "@/lib/lead-context";
+import { forwardLeadToSynergy } from "@/lib/synergy-leads";
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
 const TO = "autologgia.web@gmail.com";
@@ -26,6 +33,9 @@ const ALLOWED_FIELDS = new Set([
   "message",
   "website",
   "photos",
+  // Contexte transmis à Synergy (voir lib/lead-context.ts).
+  "submissionId",
+  "attribution",
 ]);
 const ALLOWED_FUELS = new Set(["essence", "diesel", "hybride", "electrique"]);
 const ALLOWED_TRANSMISSIONS = new Set(["automatique", "manuelle"]);
@@ -182,10 +192,15 @@ export async function POST(req: Request) {
     return jsonError("Impossible d'envoyer la demande pour le moment.", 500);
   }
 
+  // Un rejeu de la même soumission (réessai après erreur réseau) réutilise la
+  // même clé : ni email ni prospect dupliqués.
+  const submissionId = cleanSubmissionId(raw.submissionId) ?? newSubmissionId();
+  const attribution = cleanAttribution(raw.attribution);
+
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
-    await resend.emails.send({
+    const { error: resendError } = await resend.emails.send({
       from: FROM,
       to: TO,
       subject: `Nouvelle estimation - ${brand} ${model}`,
@@ -215,7 +230,11 @@ export async function POST(req: Request) {
         .filter((line) => line !== null)
         .join("\n"),
       ...(attachments.length > 0 ? { attachments } : {}),
-    });
+    }, { idempotencyKey: `autologgia-estimation-${submissionId}` });
+    if (resendError) {
+      console.error("[api/estimation] resend rejected email", resendError.name);
+      return jsonError("Impossible d'envoyer la demande pour le moment.", 502);
+    }
   } catch (error) {
     console.error(
       "[api/estimation] resend send failed",
@@ -223,6 +242,37 @@ export async function POST(req: Request) {
     );
     return jsonError("Impossible d'envoyer la demande pour le moment.", 500);
   }
+
+  // Best-effort : Synergy indisponible ne doit jamais dégrader la réponse au
+  // visiteur, dont la demande est déjà partie par email.
+  await forwardLeadToSynergy({
+    // Le formulaire d'estimation ne collecte pas de nom : Synergy en exige un,
+    // on compose donc un libellé lisible dans le CRM plutôt qu'un cadre vide.
+    name: `Estimation ${brand} ${model}`,
+    source: LEAD_SOURCE,
+    formKey: "vehicle_estimation",
+    ...(email ? { email } : {}),
+    phone,
+    ...(message ? { message } : {}),
+    product: {
+      type: "vehicle_estimation",
+      label: `${brand} ${model}${version ? ` ${version}` : ""}`,
+      estimation: {
+        brand,
+        model,
+        year: yearNum,
+        mileage: mileageNum,
+        power: powerNum,
+        fuel,
+        transmission,
+        ...(version ? { version } : {}),
+        condition: etat,
+        ...(localisation ? { location: localisation } : {}),
+      },
+    },
+    ...(attribution ? { attribution } : {}),
+    idempotencyKey: submissionId,
+  });
 
   if (sanityWriteToken) {
     try {
