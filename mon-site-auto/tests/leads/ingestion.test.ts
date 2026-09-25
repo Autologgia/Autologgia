@@ -90,22 +90,54 @@ describe("Autologgia -> Synergy", () => {
   });
 
   it("keeps the email success when Synergy is unavailable, with a diagnostic submission ID", async () => {
-    vi.mocked(global.fetch).mockRejectedValueOnce(new Error("network unavailable"));
+    // mockRejectedValue et non ...Once : la panne doit durer assez longtemps
+    // pour couvrir le réessai. Matrice du retry dans synergy-retry.test.ts.
+    vi.mocked(global.fetch).mockRejectedValue(new Error("network unavailable"));
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     const response = await contact(request("/api/contact", { submissionId, name: "Test", phone: "+33612345678", message: "Bonjour" }));
     expect(response.status).toBe(200);
     expect(send).toHaveBeenCalledTimes(1);
-    expect(log).toHaveBeenCalledWith("[synergy-leads] forward failed", { submissionId, reason: "Error" });
+    expect(log).toHaveBeenCalledWith("[synergy-leads] forward failed after retry", { submissionId, first: "Error", retry: "Error" });
     log.mockRestore();
   });
 
+  it("reports a timeout as an unknown ingestion status, not a certain failure", async () => {
+    // Cas reel observe en Preview : le forward a ete abandonne a 5 s alors que
+    // Synergy repondait 200 et avait bien ingere le lead. Le log ne doit donc
+    // jamais affirmer un echec -- sinon on cherche un prospect perdu qui existe.
+    // Vrai AUSSI apres le reessai : un timeout laisse le statut indecidable.
+    vi.mocked(global.fetch).mockRejectedValue(
+      new DOMException("The operation was aborted due to timeout", "TimeoutError"),
+    );
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const response = await contact(request("/api/contact", { submissionId, name: "Test", phone: "+33612345678", message: "Bonjour" }));
+    expect(response.status).toBe(200);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(log).toHaveBeenCalledWith(
+      "[synergy-leads] ingestion status unknown after retry",
+      { submissionId, first: "timeout", retry: "timeout" },
+    );
+    expect(log).not.toHaveBeenCalledWith("[synergy-leads] forward failed after retry", expect.anything());
+    log.mockRestore();
+  });
+
+  it("gives Synergy 10 s before abandoning the forward", async () => {
+    // 5 s etait sous le pire cas normal (cold start + RPC ingest_lead ~5,1 s).
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    await contact(request("/api/contact", { submissionId, name: "Test", phone: "+33612345678", message: "Bonjour" }));
+    expect(timeout).toHaveBeenCalledWith(10_000);
+    timeout.mockRestore();
+  });
+
   it("keeps the email success when Synergy answers an error status", async () => {
-    vi.mocked(global.fetch).mockResolvedValueOnce(new Response("{}", { status: 503 }));
+    // 403 et non 503 : un 5xx est transitoire, donc rejoue (synergy-retry.test.ts).
+    // Un token refuse est definitif et doit couper court des la premiere reponse.
+    vi.mocked(global.fetch).mockResolvedValueOnce(new Response("{}", { status: 403 }));
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     const response = await contact(request("/api/contact", { submissionId, name: "Test", phone: "+33612345678", message: "Bonjour" }));
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ success: true });
-    expect(log).toHaveBeenCalledWith("[synergy-leads] ingestion rejected", { submissionId, status: 503 });
+    expect(log).toHaveBeenCalledWith("[synergy-leads] ingestion rejected -- not retryable", { submissionId, status: 403 });
     log.mockRestore();
   });
 
