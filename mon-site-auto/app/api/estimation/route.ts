@@ -1,9 +1,21 @@
 import { Resend } from "resend";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanityWriteToken, writeClient } from "@/lib/sanity-write";
+import {
+  LEAD_SOURCE,
+  cleanAttribution,
+  cleanSubmissionId,
+  newSubmissionId,
+} from "@/lib/lead-context";
+import { forwardLeadToSynergy } from "@/lib/synergy-leads";
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
-const TO = "autologgia.web@gmail.com";
+// Destinataire réel en prod (fallback). Doit rester aligné sur /api/contact :
+// une clé Resend en mode test n'autorise l'envoi qu'à l'adresse du compte, donc
+// une valeur codée en dur ici faisait rejeter l'email (validation_error) en
+// Preview -- et le 502 qui s'ensuit coupe la route AVANT forwardLeadToSynergy,
+// donc aucun prospect n'arrivait non plus.
+const TO = process.env.RESEND_TO_EMAIL ?? "autologgia.web@gmail.com";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[0-9+().\-\s]{6,30}$/;
@@ -26,6 +38,9 @@ const ALLOWED_FIELDS = new Set([
   "message",
   "website",
   "photos",
+  // Contexte transmis à Synergy (voir lib/lead-context.ts).
+  "submissionId",
+  "attribution",
 ]);
 const ALLOWED_FUELS = new Set(["essence", "diesel", "hybride", "electrique"]);
 const ALLOWED_TRANSMISSIONS = new Set(["automatique", "manuelle"]);
@@ -177,51 +192,109 @@ export async function POST(req: Request) {
   };
   const attachments = buildAttachments(raw.photos);
 
-  if (!process.env.RESEND_API_KEY) {
-    console.error("[api/estimation] missing RESEND_API_KEY");
-    return jsonError("Impossible d'envoyer la demande pour le moment.", 500);
-  }
+  // Un rejeu de la même soumission (réessai après erreur réseau) réutilise la
+  // même clé : ni email ni prospect dupliqués.
+  const submissionId = cleanSubmissionId(raw.submissionId) ?? newSubmissionId();
+  const attribution = cleanAttribution(raw.attribution);
 
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  // Les deux canaux sont tentés INDÉPENDAMMENT et en parallèle : perdre le
+  // prospect CRM parce que l'email a échoué (ou l'inverse) reviendrait à perdre
+  // la demande d'un client. Le visiteur ne voit une erreur que si les DEUX ont
+  // échoué ; sinon la demande est bien arrivée quelque part, et le canal en
+  // échec est journalisé pour diagnostic.
+  //
+  // L'idempotence est portée par `submissionId`, que le client conserve tant
+  // que la soumission n'a pas réussi : un réessai réutilise la même clé et ne
+  // peut donc ni redoubler l'email (idempotencyKey Resend) ni le prospect
+  // (déduplication de ingest_lead côté Synergy), y compris quand un seul des
+  // deux canaux avait abouti au tour précédent.
+  const sendEmail = async (): Promise<boolean> => {
+    if (!process.env.RESEND_API_KEY) {
+      console.error("[api/estimation] missing RESEND_API_KEY");
+      return false;
+    }
+    try {
+      const { error: resendError } = await new Resend(process.env.RESEND_API_KEY).emails.send({
+        from: FROM,
+        to: TO,
+        subject: `Nouvelle estimation - ${brand} ${model}`,
+        text: [
+          "Nouvelle demande d'estimation",
+          "",
+          "-- Vehicule --",
+          `Marque      : ${brand}`,
+          `Modele      : ${model}`,
+          version ? `Version     : ${version}` : null,
+          `Annee       : ${yearNum}`,
+          `Kilometrage : ${mileageNum.toLocaleString("fr-FR")} km`,
+          `Puissance   : ${powerNum} ch`,
+          `Carburant   : ${fuel}`,
+          `Transmission: ${transmission}`,
+          `Etat        : ${etatLabels[etat] ?? etat}`,
+          attachments.length > 0 ? `Photos jointes: ${attachments.length}` : null,
+          "",
+          "-- Contact --",
+          `Telephone   : ${phone}`,
+          `Email       : ${email || "non renseigne"}`,
+          localisation ? `Localisation: ${localisation}` : null,
+          message ? `\nMessage :\n${message}` : null,
+          "",
+          `Date : ${new Date().toLocaleString("fr-FR")}`,
+        ]
+          .filter((line) => line !== null)
+          .join("\n"),
+        ...(attachments.length > 0 ? { attachments } : {}),
+      }, { idempotencyKey: `autologgia-estimation-${submissionId}` });
+      if (resendError) {
+        console.error("[api/estimation] resend rejected email", resendError.name);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error(
+        "[api/estimation] resend send failed",
+        error instanceof Error ? error.message : "unknown error",
+      );
+      return false;
+    }
+  };
 
-  try {
-    await resend.emails.send({
-      from: FROM,
-      to: TO,
-      subject: `Nouvelle estimation - ${brand} ${model}`,
-      text: [
-        "Nouvelle demande d'estimation",
-        "",
-        "-- Vehicule --",
-        `Marque      : ${brand}`,
-        `Modele      : ${model}`,
-        version ? `Version     : ${version}` : null,
-        `Annee       : ${yearNum}`,
-        `Kilometrage : ${mileageNum.toLocaleString("fr-FR")} km`,
-        `Puissance   : ${powerNum} ch`,
-        `Carburant   : ${fuel}`,
-        `Transmission: ${transmission}`,
-        `Etat        : ${etatLabels[etat] ?? etat}`,
-        attachments.length > 0 ? `Photos jointes: ${attachments.length}` : null,
-        "",
-        "-- Contact --",
-        `Telephone   : ${phone}`,
-        `Email       : ${email || "non renseigne"}`,
-        localisation ? `Localisation: ${localisation}` : null,
-        message ? `\nMessage :\n${message}` : null,
-        "",
-        `Date : ${new Date().toLocaleString("fr-FR")}`,
-      ]
-        .filter((line) => line !== null)
-        .join("\n"),
-      ...(attachments.length > 0 ? { attachments } : {}),
-    });
-  } catch (error) {
-    console.error(
-      "[api/estimation] resend send failed",
-      error instanceof Error ? error.message : "unknown error"
-    );
-    return jsonError("Impossible d'envoyer la demande pour le moment.", 500);
+  const [emailSent, leadForwarded] = await Promise.all([
+    sendEmail(),
+    forwardLeadToSynergy({
+      // Le formulaire d'estimation ne collecte pas de nom : Synergy en exige un,
+      // on compose donc un libellé lisible dans le CRM plutôt qu'un cadre vide.
+      name: `Estimation ${brand} ${model}`,
+      source: LEAD_SOURCE,
+      formKey: "vehicle_estimation",
+      ...(email ? { email } : {}),
+      phone,
+      ...(message ? { message } : {}),
+      product: {
+        type: "vehicle_estimation",
+        label: `${brand} ${model}${version ? ` ${version}` : ""}`,
+        estimation: {
+          brand,
+          model,
+          year: yearNum,
+          mileage: mileageNum,
+          power: powerNum,
+          fuel,
+          transmission,
+          ...(version ? { version } : {}),
+          condition: etat,
+          ...(localisation ? { location: localisation } : {}),
+        },
+      },
+      ...(attribution ? { attribution } : {}),
+      idempotencyKey: submissionId,
+    }),
+  ]);
+
+  // Les deux canaux ont échoué : la demande n'est arrivée nulle part, le
+  // visiteur doit pouvoir réessayer (avec le même submissionId).
+  if (!emailSent && !leadForwarded) {
+    return jsonError("Impossible d'envoyer la demande pour le moment.", 502);
   }
 
   if (sanityWriteToken) {

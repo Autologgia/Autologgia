@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { trackGA4Event } from "@/lib/analytics";
+import { getAttributionForSubmit } from "@/lib/attribution";
+import { newSubmissionId } from "@/lib/lead-submission";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -19,6 +21,8 @@ const fieldCls =
 export default function HomepageContactForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  // Conservé tant que l'envoi n'a pas abouti : un réessai ne crée pas de doublon.
+  const submissionIdRef = useRef<string | null>(null);
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,6 +30,7 @@ export default function HomepageContactForm() {
     setErrorMessage("");
 
     const form = e.currentTarget;
+    if (!submissionIdRef.current) submissionIdRef.current = newSubmissionId();
     const data = {
       name:    (form.elements.namedItem("name")    as HTMLInputElement).value,
       email:   (form.elements.namedItem("email")   as HTMLInputElement).value,
@@ -33,6 +38,9 @@ export default function HomepageContactForm() {
       sujet:   (form.elements.namedItem("sujet")   as HTMLSelectElement).value,
       message: (form.elements.namedItem("message") as HTMLTextAreaElement).value,
       website: (form.elements.namedItem("website") as HTMLInputElement)?.value ?? "",
+      submissionId: submissionIdRef.current,
+      formKey: "homepage_contact",
+      attribution: getAttributionForSubmit(),
     };
 
     try {
@@ -50,6 +58,7 @@ export default function HomepageContactForm() {
             form_name: "homepage_contact",
           });
         }
+        submissionIdRef.current = null;
         setStatus("success");
         form.reset();
       } else {
@@ -87,11 +96,15 @@ export default function HomepageContactForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
 
-      {/* Honeypot anti-spam */}
-      <div
-        style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none" }}
-        aria-hidden="true"
-      >
+      {/* Honeypot anti-spam. `display:none` et NON un déplacement hors écran
+          (left:-9999px) : Chrome considère un champ hors écran comme visible et
+          l'autofill le remplissait, ce qui faisait passer de vraies soumissions
+          pour des bots -- elles repartaient alors en succès silencieux, sans
+          email ni prospect. Un champ display:none est ignoré par l'autofill
+          comme par les gestionnaires de mots de passe, mais reste présent dans
+          le HTML : les bots qui remplissent tous les champs du formulaire sans
+          évaluer le CSS -- l'immense majorité -- tombent toujours dedans. */}
+      <div style={{ display: "none" }} aria-hidden="true">
         <input type="text" name="website" tabIndex={-1} autoComplete="off" />
       </div>
 
