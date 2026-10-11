@@ -82,11 +82,31 @@ describe("GET /api/cms-media/[id]", () => {
   it("cache CDN étiqueté d'après SYNERGY : un tag par véhicule qui utilise l'image (par identifiant) + le tag global", async () => {
     fetchMock.mockResolvedValue(image());
     const response = await media("?w=640");
-    expect(response.headers.get("cache-control")).toBe("public, max-age=86400");
-    expect(response.headers.get("vercel-cdn-cache-control")).toBe("max-age=604800");
+    expect(response.headers.get("cache-control")).toBe("public, max-age=3600");
+    expect(response.headers.get("vercel-cdn-cache-control")).toBe("max-age=3600");
     expect(response.headers.get("vercel-cache-tag")).toBe(
       `cms:autologgia:media,cms:autologgia:vehicle-media:${VEHICLE_A},cms:autologgia:vehicle-media:${VEHICLE_B}`,
     );
+  });
+
+  it("une heure au plus, et jamais d'entrée expirée resservie (ni stale-while-revalidate, ni stale-if-error, ni immutable)", async () => {
+    fetchMock.mockResolvedValue(image());
+    const response = await media("?w=640");
+    for (const name of ["cache-control", "vercel-cdn-cache-control", "cdn-cache-control"]) {
+      const value = response.headers.get(name) ?? "";
+      expect(value, name).not.toMatch(/stale-while-revalidate|stale-if-error|immutable|s-maxage/);
+      const maxAge = Number(/max-age=(\d+)/.exec(value)?.[1] ?? 0);
+      expect(maxAge, name).toBeLessThanOrEqual(3600);
+    }
+  });
+
+  it.each([500, 502, 503, 429, 401])("erreur de l'origine (%i) : 502/404 sans aucun en-tête de cache réutilisable", async (status) => {
+    fetchMock.mockResolvedValueOnce(new Response("err", { status }));
+    const response = await media("?w=640");
+    expect([404, 502]).toContain(response.status);
+    expect(response.headers.get("vercel-cdn-cache-control")).toBeNull();
+    expect(response.headers.get("vercel-cache-tag")).toBeNull();
+    expect(response.headers.get("cache-control") ?? "").not.toMatch(/max-age|public/);
   });
 
   it("sans identifiant de véhicule exploitable (absent, vide, mal formé) : JAMAIS de cache partagé", async () => {

@@ -4,11 +4,13 @@ import { cmsMediaTag, vehicleMediaTag } from "@/lib/cms/tags";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const UPSTREAM_TIMEOUT_MS = 10_000;
-// Navigateur : un jour. CDN Vercel : sept jours au plus, purgé bien avant par
-// tag à chaque écriture ; ce délai ne sert que de filet si une notification
-// de Synergy se perdait.
-const BROWSER_CACHE = "public, max-age=86400";
-const CDN_CACHE = "max-age=604800";
+// Une heure, navigateur comme CDN Vercel. La purge par tag à chaque écriture
+// retire l'image bien avant ; cette heure borne l'exposition d'une image
+// dépubliée si la notification de Synergy et sa nouvelle tentative échouaient
+// toutes deux. Volontairement SANS stale-while-revalidate ni stale-if-error :
+// une entrée expirée n'est jamais resservie, même si l'origine est en erreur.
+const BROWSER_CACHE = "public, max-age=3600";
+const CDN_CACHE = "max-age=3600";
 const NO_SHARED_CACHE = "private, no-store";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +42,9 @@ function canonicalWidth(url: URL): CmsMediaWidth | null {
  *  - sans tag exploitable, la réponse n'est PAS mise en cache partagé ;
  *  - une seule URL par image et par largeur (paramètres non canoniques refusés),
  *    et l'optimiseur /_next/image refuse ces URL (images.localPatterns) ;
- *  - filet : sept jours de CDN au plus si une notification se perdait.
+ *  - filet : une heure de cache au plus si une notification se perdait, sans
+ *    jamais resservir une entrée expirée (ni stale-while-revalidate, ni
+ *    stale-if-error) ; une erreur de l'origine n'est jamais mise en cache.
  * Un remplacement d'image crée un NOUVEL id côté Synergy (donc une nouvelle URL).
  */
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
