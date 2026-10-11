@@ -238,14 +238,16 @@ describe("CMS_SOURCE=supabase : le catalogue vient de Synergy", () => {
     expect((await getAllVehicles())[0].critAir).toBe(expected);
   });
 
-  it("images : URLs relatives /api/cms-media/<id> (aucun secret, aucune URL Supabase), ordre conservé, alt fourni", async () => {
+  it("images : URLs relatives /api/cms-media/<id>?v=<slug> (aucun secret, aucune URL Supabase), ordre conservé, alt fourni", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ vehicles: [deliveryVehicle()] }));
 
     const [car] = await getAllVehicles();
 
+    // `v` = slug du véhicule : étiquette la réponse en cache CDN avec le tag
+    // du véhicule, purgé par la revalidation qu'envoie Synergy.
     expect(car.images).toEqual([
-      { _key: MEDIA_A, url: `/api/cms-media/${MEDIA_A}`, altText: "Face avant", width: 1206, height: 896 },
-      { _key: MEDIA_B, url: `/api/cms-media/${MEDIA_B}`, altText: "Profil", width: 1206, height: 917 },
+      { _key: MEDIA_A, url: `/api/cms-media/${MEDIA_A}?v=citroen-c1`, altText: "Face avant", width: 1206, height: 896 },
+      { _key: MEDIA_B, url: `/api/cms-media/${MEDIA_B}?v=citroen-c1`, altText: "Profil", width: 1206, height: 917 },
     ]);
     const serialized = JSON.stringify(car);
     expect(serialized).not.toContain(TOKEN);

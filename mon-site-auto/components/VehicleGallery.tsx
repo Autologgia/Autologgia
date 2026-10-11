@@ -3,6 +3,7 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { getVehicleImageLoader } from "@/lib/vehicle-images";
 
 const AUTOPLAY_MS = 4000;
 const MOBILE_THUMB_COUNT = 4;
@@ -85,6 +86,7 @@ export default function VehicleGallery({ images }: { images: GalleryImage[] }) {
           <Image
             key={`${image.src}-${i}`}
             src={image.src}
+            loader={getVehicleImageLoader(image.src)}
             alt={image.alt}
             fill
             className={`object-cover transition-opacity duration-700 ease-in-out ${
@@ -276,6 +278,7 @@ function AllImagesOverlay({
               >
                 <Image
                   src={image.src}
+                  loader={getVehicleImageLoader(image.src)}
                   alt={image.alt}
                   fill
                   className="object-cover transition duration-500 group-hover:scale-105"
@@ -469,6 +472,7 @@ function ThumbnailRail({
           >
             <Image
               src={image.src}
+              loader={getVehicleImageLoader(image.src)}
               alt={image.alt}
               fill
               draggable={false}

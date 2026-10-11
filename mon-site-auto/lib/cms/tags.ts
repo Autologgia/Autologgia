@@ -21,3 +21,8 @@ export function vehiclesTag(siteKey: string = cmsSiteKey()): string {
 export function vehicleTag(slug: string, siteKey: string = cmsSiteKey()): string {
   return `cms:${siteKey}:vehicle:${slug}`;
 }
+
+/** Tag porté par TOUTES les images CMS du site (purge globale manuelle possible). */
+export function cmsMediaTag(siteKey: string = cmsSiteKey()): string {
+  return `cms:${siteKey}:media`;
+}

@@ -1,3 +1,4 @@
+import { cmsMediaLoader, isCmsMediaUrl } from "@/lib/cms-media-variants";
 import { urlFor } from "@/lib/sanity";
 import type { CarImage, DeliveryImage } from "@/lib/types";
 
@@ -11,4 +12,13 @@ export function getVehicleImageUrl(image: CarImage, width: number, height: numbe
 
 export function getVehicleImageAlt(image: CarImage, fallback: string) {
   return isDeliveryImage(image) ? image.altText : fallback;
+}
+
+/**
+ * Loader `next/image` adapté à la source : les images du CMS Synergy
+ * demandent directement leur variante WebP (voir lib/cms-media-variants.ts) ;
+ * les autres (Sanity, fichiers de public/) gardent l'optimiseur par défaut.
+ */
+export function getVehicleImageLoader(src: string) {
+  return isCmsMediaUrl(src) ? cmsMediaLoader : undefined;
 }

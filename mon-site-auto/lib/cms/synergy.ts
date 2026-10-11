@@ -2,6 +2,7 @@ import "server-only";
 
 import type { PortableTextBlock } from "@portabletext/types";
 import { getSynergyDeliveryConfig } from "@/lib/cms/config";
+import { cmsMediaUrl } from "@/lib/cms-media-variants";
 import { vehicleTag, vehiclesTag } from "@/lib/cms/tags";
 import type { Car, DeliveryImage } from "@/lib/types";
 
@@ -108,7 +109,7 @@ function mapCritAir(value: DeliveryVehicle["critAir"]) {
 function mapVehicle(vehicle: DeliveryVehicle): Car {
   const images: DeliveryImage[] = vehicle.images.map((image) => ({
     _key: image.mediaId,
-    url: `/api/cms-media/${image.mediaId}`,
+    url: cmsMediaUrl(image.mediaId, vehicle.slug),
     altText: image.altText,
     width: image.width,
     height: image.height,

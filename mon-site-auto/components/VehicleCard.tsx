@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Car } from "@/lib/types";
 import { formatCarPrice, formatMileage, formatPower } from "@/lib/format";
 import { getVehicleStatusInfo } from "@/lib/vehicle-status";
-import { getVehicleImageAlt, getVehicleImageUrl } from "@/lib/vehicle-images";
+import { getVehicleImageAlt, getVehicleImageLoader, getVehicleImageUrl } from "@/lib/vehicle-images";
 
 interface Props {
   car: Car;
@@ -86,6 +86,7 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
               <Image
                 key={`${car.slug}-${index}`}
                 src={image.src}
+                loader={getVehicleImageLoader(image.src)}
                 alt={image.alt}
                 fill
                 className={`object-cover transition-opacity duration-700 ease-in-out ${
@@ -99,6 +100,7 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
             // Desktop : image statique avec hover scale
             <Image
               src={images[0].src}
+              loader={getVehicleImageLoader(images[0].src)}
               alt={images[0].alt}
               fill
               className="object-cover transition duration-700 group-hover:scale-105"
