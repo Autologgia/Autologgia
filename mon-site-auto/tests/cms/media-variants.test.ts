@@ -22,19 +22,16 @@ describe("images CMS : variantes Synergy sans optimiseur Vercel", () => {
     expect(new Set(NEXT_IMAGE_WIDTHS.map(snapCmsMediaWidth)).size).toBe(5);
   });
 
-  it("le loader ajoute ?w= à l'URL de l'image (qui porte déjà ?v=<slug>) et ne passe jamais par /_next/image", () => {
-    const src = cmsMediaUrl(MEDIA_ID, "clio-3");
-    expect(src).toBe(`/api/cms-media/${MEDIA_ID}?v=clio-3`);
-    expect(cmsMediaLoader({ src, width: 828 })).toBe(`/api/cms-media/${MEDIA_ID}?v=clio-3&w=1280`);
-    expect(cmsMediaLoader({ src: `/api/cms-media/${MEDIA_ID}`, width: 256 })).toBe(`/api/cms-media/${MEDIA_ID}?w=320`);
-  });
-
-  it("slug inattendu : pas de ?v= (jamais une valeur arbitraire dans l'URL)", () => {
-    expect(cmsMediaUrl(MEDIA_ID, "../x")).toBe(`/api/cms-media/${MEDIA_ID}`);
+  it("le loader produit l'URL canonique /api/cms-media/<id>?w=<variante> et ne passe jamais par /_next/image", () => {
+    const src = cmsMediaUrl(MEDIA_ID);
+    expect(src).toBe(`/api/cms-media/${MEDIA_ID}`);
+    expect(cmsMediaLoader({ src, width: 828 })).toBe(`/api/cms-media/${MEDIA_ID}?w=1280`);
+    expect(cmsMediaLoader({ src, width: 256 })).toBe(`/api/cms-media/${MEDIA_ID}?w=320`);
+    expect(cmsMediaLoader({ src, width: 3840 })).toBe(`/api/cms-media/${MEDIA_ID}?w=1920`);
   });
 
   it("seules les images CMS changent de loader ; Sanity et public/ gardent l'optimiseur par défaut", () => {
-    expect(getVehicleImageLoader(`/api/cms-media/${MEDIA_ID}?v=clio-3`)).toBe(cmsMediaLoader);
+    expect(getVehicleImageLoader(`/api/cms-media/${MEDIA_ID}`)).toBe(cmsMediaLoader);
     expect(getVehicleImageLoader("https://cdn.sanity.io/images/p/d/abc-800x600.jpg")).toBeUndefined();
     expect(getVehicleImageLoader("/logo.png")).toBeUndefined();
   });

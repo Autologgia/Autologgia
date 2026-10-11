@@ -109,7 +109,7 @@ function mapCritAir(value: DeliveryVehicle["critAir"]) {
 function mapVehicle(vehicle: DeliveryVehicle): Car {
   const images: DeliveryImage[] = vehicle.images.map((image) => ({
     _key: image.mediaId,
-    url: cmsMediaUrl(image.mediaId, vehicle.slug),
+    url: cmsMediaUrl(image.mediaId),
     altText: image.altText,
     width: image.width,
     height: image.height,

@@ -4,9 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const revalidateTag = vi.hoisted(() => vi.fn());
 const revalidatePath = vi.hoisted(() => vi.fn());
+const dangerouslyDeleteByTag = vi.hoisted(() => vi.fn<(tag: string | string[], options?: { revalidationDeadlineSeconds: number }) => Promise<void>>(async () => undefined));
 const cookieValue = vi.hoisted(() => ({ value: undefined as string | undefined }));
 
 vi.mock("next/cache", () => ({ revalidateTag, revalidatePath }));
+vi.mock("@vercel/functions", () => ({ dangerouslyDeleteByTag }));
 vi.mock("next/headers", () => ({
   cookies: async () => ({ get: () => (cookieValue.value ? { value: cookieValue.value } : undefined) }),
 }));
@@ -29,6 +31,7 @@ beforeEach(() => {
   fetchMock.mockReset();
   revalidateTag.mockReset();
   revalidatePath.mockReset();
+  dangerouslyDeleteByTag.mockClear();
   cookieValue.value = undefined;
   vi.stubGlobal("fetch", fetchMock);
   process.env.CMS_SOURCE = "supabase";
@@ -48,12 +51,18 @@ const mediaContext = (id: string) => ({ params: Promise.resolve({ id }) });
 const slugContext = (slug: string) => ({ params: Promise.resolve({ slug }) });
 
 describe("GET /api/cms-media/[id]", () => {
-  it("relaie l'image de Synergy avec le jeton côté serveur ; le navigateur ne voit ni jeton ni URL amont", async () => {
+  const VEHICLE_A = "22222222-2222-4222-8222-222222222222";
+  const VEHICLE_B = "33333333-3333-4333-8333-333333333333";
+  const image = (vehicleIds: string | null = `${VEHICLE_A},${VEHICLE_B}`, type = "image/webp") =>
+    new Response("WEBP", { status: 200, headers: { "content-type": type, ...(vehicleIds === null ? {} : { "x-cms-vehicle-ids": vehicleIds }) } });
+  const media = (query = "?w=1280", id = MEDIA_ID) => getMedia(new Request(`https://site.test/api/cms-media/${id}${query}`), mediaContext(id));
+
+  it("relaie l'image de Synergy avec le jeton côté serveur ; le navigateur ne voit ni jeton, ni URL amont, ni identifiants de véhicules", async () => {
     fetchMock.mockResolvedValue(
-      new Response("PNGDATA", { status: 200, headers: { "content-type": "image/jpeg", "content-length": "7", etag: '"abc"' } }),
+      new Response("PNGDATA", { status: 200, headers: { "content-type": "image/jpeg", "content-length": "7", etag: '"abc"', "x-cms-vehicle-ids": VEHICLE_A } }),
     );
 
-    const response = await getMedia(new Request(`https://site.test/api/cms-media/${MEDIA_ID}?v=clio-3&w=1280`), mediaContext(MEDIA_ID));
+    const response = await media("?w=1280");
 
     expect(response.status).toBe(200);
     expect(await response.text()).toBe("PNGDATA");
@@ -63,78 +72,73 @@ describe("GET /api/cms-media/[id]", () => {
     expect(response.headers.get("content-type")).toBe("image/jpeg");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(response.headers.get("etag")).toBe('"abc"');
+    expect(response.headers.get("x-cms-vehicle-ids")).toBeNull();
     for (const [name, value] of response.headers.entries()) {
       expect(`${name}: ${value}`).not.toContain(TOKEN);
       expect(`${name}: ${value}`).not.toContain(BASE_URL);
     }
   });
 
-  it("cache CDN : un an, étiqueté avec le tag du véhicule (purgé par la revalidation Synergy) et le tag global des médias", async () => {
-    fetchMock.mockResolvedValue(new Response("WEBP", { status: 200, headers: { "content-type": "image/webp" } }));
-
-    const response = await getMedia(new Request(`https://site.test/api/cms-media/${MEDIA_ID}?v=clio-3&w=640`), mediaContext(MEDIA_ID));
-
-    expect(response.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
-    expect(response.headers.get("vercel-cdn-cache-control")).toBe("max-age=31536000");
-    expect(response.headers.get("vercel-cache-tag")).toBe("cms:autologgia:media,cms:autologgia:vehicle:clio-3");
+  it("cache CDN étiqueté d'après SYNERGY : un tag par véhicule qui utilise l'image (par identifiant) + le tag global", async () => {
+    fetchMock.mockResolvedValue(image());
+    const response = await media("?w=640");
+    expect(response.headers.get("cache-control")).toBe("public, max-age=86400");
+    expect(response.headers.get("vercel-cdn-cache-control")).toBe("max-age=604800");
+    expect(response.headers.get("vercel-cache-tag")).toBe(
+      `cms:autologgia:media,cms:autologgia:vehicle-media:${VEHICLE_A},cms:autologgia:vehicle-media:${VEHICLE_B}`,
+    );
   });
 
-  it("le tag de véhicule est exactement celui que purge /api/cms/revalidate pour ce slug", async () => {
-    fetchMock.mockResolvedValue(new Response("WEBP", { status: 200, headers: { "content-type": "image/webp" } }));
-    const media = await getMedia(new Request(`https://site.test/api/cms-media/${MEDIA_ID}?v=clio-3`), mediaContext(MEDIA_ID));
-    const revalidate = await postRevalidate(
-      new Request("https://site.test/api/cms/revalidate", {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-cms-revalidate-secret": REVALIDATE_SECRET },
-        body: JSON.stringify({ siteKey: "autologgia", resource: "vehicles", slug: "clio-3", reason: "vehicle.images" }),
-      }),
-    );
-    expect(revalidate.status).toBe(200);
-    const purged = revalidateTag.mock.calls.map(([tag]) => tag);
-    const vehicleTagOnMedia = media.headers.get("vercel-cache-tag")!.split(",")[1];
-    expect(purged).toContain(vehicleTagOnMedia);
+  it("sans identifiant de véhicule exploitable (absent, vide, mal formé) : JAMAIS de cache partagé", async () => {
+    for (const ids of [null, "", "pas-un-uuid", "../x,1"]) {
+      fetchMock.mockResolvedValueOnce(image(ids));
+      const response = await media("?w=640");
+      expect(response.status, String(ids)).toBe(200);
+      expect(response.headers.get("cache-control")).toBe("private, no-store");
+      expect(response.headers.get("vercel-cdn-cache-control")).toBeNull();
+      expect(response.headers.get("vercel-cache-tag")).toBeNull();
+    }
+  });
+
+  it("identifiants mal formés ignorés, valides conservés (jamais un tag arbitraire)", async () => {
+    fetchMock.mockResolvedValue(image(`${VEHICLE_A},evil,tag`));
+    const response = await media("?w=640");
+    expect(response.headers.get("vercel-cache-tag")).toBe(`cms:autologgia:media,cms:autologgia:vehicle-media:${VEHICLE_A}`);
   });
 
   it.each([
     ["", 1920],
-    ["?w=1080", 1280],
-    ["?w=3840", 1920],
-    ["?w=48", 160],
-    ["?w=abc", 1920],
-    ["?w=-5", 1920],
-  ])("largeur %j -> variante %i de Synergy (jeu fermé, une URL amont par largeur)", async (query, width) => {
-    fetchMock.mockResolvedValue(new Response("WEBP", { status: 200, headers: { "content-type": "image/webp" } }));
-    await getMedia(new Request(`https://site.test/api/cms-media/${MEDIA_ID}${query}`), mediaContext(MEDIA_ID));
+    ["?w=160", 160],
+    ["?w=320", 320],
+    ["?w=640", 640],
+    ["?w=1280", 1280],
+    ["?w=1920", 1920],
+  ])("URL canonique %j -> variante %i de Synergy", async (query, width) => {
+    fetchMock.mockResolvedValue(image());
+    expect((await media(query)).status).toBe(200);
     expect(fetchMock.mock.calls[0][0]).toBe(`${BASE_URL}/api/public/cms/media/${MEDIA_ID}?w=${width}`);
   });
 
-  it("sans ?v= (ancienne URL) : servie, avec le seul tag global", async () => {
-    fetchMock.mockResolvedValue(new Response("WEBP", { status: 200, headers: { "content-type": "image/webp" } }));
-    const response = await getMedia(new Request(`https://site.test/api/cms-media/${MEDIA_ID}`), mediaContext(MEDIA_ID));
-    expect(response.status).toBe(200);
-    expect(response.headers.get("vercel-cache-tag")).toBe("cms:autologgia:media");
-  });
+  it.each(["?w=1080", "?w=0640", "?w=640.0", "?w=abc", "?w=", "?w=640&w=1280", "?w=640&v=clio-3", "?v=clio-3", "?x=1"])(
+    "URL non canonique %j -> 404 sans appel amont (une seule entrée de cache par image et par largeur)",
+    async (query) => {
+      expect((await media(query)).status).toBe(404);
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
 
-  it.each(["Clio", "../x", "a,b", "clio 3", ""])("?v=%j invalide -> 404 sans appel amont (aucun tag arbitraire)", async (slug) => {
-    const response = await getMedia(
-      new Request(`https://site.test/api/cms-media/${MEDIA_ID}?v=${encodeURIComponent(slug)}`),
-      mediaContext(MEDIA_ID),
-    );
-    expect(response.status).toBe(404);
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it("erreurs : jamais mises en cache par le CDN", async () => {
+  it("image retirée ou devenue privée (404 amont) -> 404, jamais mise en cache", async () => {
     fetchMock.mockResolvedValueOnce(new Response("Not found", { status: 404 }));
-    const notFound = await getMedia(new Request(`https://site.test/api/cms-media/${MEDIA_ID}?v=clio-3`), mediaContext(MEDIA_ID));
+    const notFound = await media("?w=640");
     expect(notFound.status).toBe(404);
     expect(notFound.headers.get("vercel-cdn-cache-control")).toBeNull();
+    expect(notFound.headers.get("vercel-cache-tag")).toBeNull();
     expect(notFound.headers.get("cache-control") ?? "").not.toContain("max-age");
   });
 
   it("CMS_SOURCE=sanity -> 404 sans aucun appel Synergy (rollback : la route se désactive)", async () => {
     process.env.CMS_SOURCE = "sanity";
-    const response = await getMedia(new Request("https://site.test/x"), mediaContext(MEDIA_ID));
+    const response = await media("");
     expect(response.status).toBe(404);
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -148,19 +152,14 @@ describe("GET /api/cms-media/[id]", () => {
     },
   );
 
-  it("média inconnu (404 amont) -> 404", async () => {
-    fetchMock.mockResolvedValue(new Response("Not found", { status: 404 }));
-    expect((await getMedia(new Request("https://site.test/x"), mediaContext(MEDIA_ID))).status).toBe(404);
-  });
-
   it("réponse amont qui n'est pas une image -> 502 (jamais relayée)", async () => {
     fetchMock.mockResolvedValue(new Response("<html>oops</html>", { status: 200, headers: { "content-type": "text/html" } }));
-    expect((await getMedia(new Request("https://site.test/x"), mediaContext(MEDIA_ID))).status).toBe(502);
+    expect((await media("")).status).toBe(502);
   });
 
   it("erreur réseau amont -> 502 sans détail", async () => {
     fetchMock.mockRejectedValue(new Error(`connect ECONNREFUSED ${BASE_URL} ${TOKEN}`));
-    const response = await getMedia(new Request("https://site.test/x"), mediaContext(MEDIA_ID));
+    const response = await media("");
     expect(response.status).toBe(502);
     expect(await response.text()).toBe("Media unavailable");
   });
@@ -290,4 +289,35 @@ describe("POST /api/cms/revalidate (invalidation poussée par Synergy)", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(JSON.stringify(await response.json())).not.toContain(REVALIDATE_SECRET);
   });
+  it("vehicleId : SUPPRIME du CDN les images du véhicule (jamais une invalidation qui resservirait l’ancienne image), même si le slug a changé", async () => {
+    const VEHICLE = "22222222-2222-4222-8222-222222222222";
+    const response = await post({ siteKey: "autologgia", resource: "vehicles", vehicleId: VEHICLE, slug: "nouveau-slug", reason: "vehicle.update" });
+    expect(response.status).toBe(200);
+    expect(dangerouslyDeleteByTag).toHaveBeenCalledTimes(1);
+    expect(dangerouslyDeleteByTag).toHaveBeenCalledWith(`cms:autologgia:vehicle-media:${VEHICLE}`, { revalidationDeadlineSeconds: 0 });
+  });
+
+  it("le tag supprimé est exactement celui que /api/cms-media pose sur les images de ce véhicule", async () => {
+    const VEHICLE = "22222222-2222-4222-8222-222222222222";
+    fetchMock.mockResolvedValue(new Response("WEBP", { status: 200, headers: { "content-type": "image/webp", "x-cms-vehicle-ids": VEHICLE } }));
+    const image = await getMedia(new Request(`https://site.test/api/cms-media/${MEDIA_ID}?w=640`), mediaContext(MEDIA_ID));
+    await post({ siteKey: "autologgia", resource: "vehicles", vehicleId: VEHICLE, reason: "vehicle.archive" });
+    const [deletedTag] = dangerouslyDeleteByTag.mock.calls[0] as [string];
+    expect(image.headers.get("vercel-cache-tag")!.split(",")).toContain(deletedTag);
+  });
+
+  it("vehicleId mal formé -> 422 sans aucune purge ; purge des images en échec -> 503 (Synergy retente), pages non purgées", async () => {
+    expect((await post({ siteKey: "autologgia", resource: "vehicles", vehicleId: "a,b" })).status).toBe(422);
+    expect(dangerouslyDeleteByTag).not.toHaveBeenCalled();
+    dangerouslyDeleteByTag.mockRejectedValueOnce(new Error("purge down"));
+    expect((await post({ siteKey: "autologgia", resource: "vehicles", vehicleId: "22222222-2222-4222-8222-222222222222" })).status).toBe(503);
+    expect(revalidateTag).not.toHaveBeenCalled();
+  });
+
+  it("ancienne notification sans vehicleId (Synergy pas encore à jour) : pages purgées comme avant, aucune purge d’images", async () => {
+    expect((await post({ siteKey: "autologgia", resource: "vehicles", slug: "clio-3" })).status).toBe(200);
+    expect(dangerouslyDeleteByTag).not.toHaveBeenCalled();
+    expect(revalidateTag).toHaveBeenCalled();
+  });
 });
+

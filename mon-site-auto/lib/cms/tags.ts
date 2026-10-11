@@ -26,3 +26,12 @@ export function vehicleTag(slug: string, siteKey: string = cmsSiteKey()): string
 export function cmsMediaTag(siteKey: string = cmsSiteKey()): string {
   return `cms:${siteKey}:media`;
 }
+
+/**
+ * Tag CDN des images d'un véhicule, par IDENTIFIANT (stable même si le slug
+ * change). Posé sur chaque image d'après la liste fournie par Synergy
+ * (X-Cms-Vehicle-Ids), purgé par /api/cms/revalidate (vehicleId).
+ */
+export function vehicleMediaTag(vehicleId: string, siteKey: string = cmsSiteKey()): string {
+  return `cms:${siteKey}:vehicle-media:${vehicleId}`;
+}

@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
+import { dangerouslyDeleteByTag } from "@vercel/functions";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { cmsSiteKey, vehicleTag, vehiclesTag } from "@/lib/cms/tags";
+import { cmsSiteKey, vehicleMediaTag, vehicleTag, vehiclesTag } from "@/lib/cms/tags";
 
 // Invalidation « push » déclenchée par Synergy après chaque écriture de
 // contenu (voir synergy-app/src/lib/cms/notify-consumer.ts). Protégée par un
@@ -9,6 +10,7 @@ import { cmsSiteKey, vehicleTag, vehiclesTag } from "@/lib/cms/tags";
 export const dynamic = "force-dynamic";
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function safeEqual(provided: string, expected: string): boolean {
   const a = Buffer.from(provided, "utf8");
@@ -40,6 +42,7 @@ export async function POST(request: Request) {
   const siteKey = typeof payload.siteKey === "string" ? payload.siteKey.trim() : "";
   const resource = typeof payload.resource === "string" ? payload.resource.trim() : "";
   const slug = typeof payload.slug === "string" ? payload.slug.trim() : "";
+  const vehicleId = typeof payload.vehicleId === "string" ? payload.vehicleId.trim() : "";
 
   // Frontière multi-client : ce déploiement ne sert qu'un seul site.
   if (siteKey !== cmsSiteKey()) {
@@ -50,6 +53,22 @@ export async function POST(request: Request) {
   }
   if (slug && !SLUG_PATTERN.test(slug)) {
     return Response.json({ error: "Slug invalide." }, { status: 422 });
+  }
+  if (vehicleId && !UUID_PATTERN.test(vehicleId)) {
+    return Response.json({ error: "Identifiant de véhicule invalide." }, { status: 422 });
+  }
+
+  // Images du véhicule dans le CDN (tag posé par /api/cms-media d'après
+  // Synergy). SUPPRESSION, pas invalidation : une invalidation servirait encore
+  // une fois l'ancienne réponse -- donc une image peut-être devenue privée --
+  // pendant son rafraîchissement. Échec -> 503, et Synergy retente.
+  if (vehicleId) {
+    try {
+      await dangerouslyDeleteByTag(vehicleMediaTag(vehicleId, siteKey), { revalidationDeadlineSeconds: 0 });
+    } catch (error) {
+      console.error("[cms/revalidate] purge des images impossible", error instanceof Error ? error.message : "unknown");
+      return Response.json({ error: "Purge des images impossible." }, { status: 503 });
+    }
   }
 
   const tags = [vehiclesTag(siteKey)];

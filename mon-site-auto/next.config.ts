@@ -15,6 +15,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   images: {
+    // Seuls les fichiers de public/ (racine) passent par l'optimiseur
+    // /_next/image. Les images du CMS (/api/cms-media/<id>) en sont exclues :
+    // elles arrivent déjà en variantes WebP (lib/cms-media-variants.ts), et une
+    // copie optimisée échapperait à la purge par tag lors d'une dépublication.
+    localPatterns: [{ pathname: "/*.{png,jpg,jpeg,webp,avif,gif,svg}", search: "" }],
     remotePatterns: [
       {
         protocol: "https",

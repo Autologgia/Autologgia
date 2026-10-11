@@ -22,8 +22,6 @@ export const CMS_MEDIA_DEFAULT_WIDTH: CmsMediaWidth = 1920;
 
 export const CMS_MEDIA_PATH_PREFIX = "/api/cms-media/";
 
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
 /** Plus petite variante couvrant `requested` (la plus grande au-delà). */
 export function snapCmsMediaWidth(requested: number): CmsMediaWidth {
   for (const width of CMS_MEDIA_WIDTHS) {
@@ -32,18 +30,13 @@ export function snapCmsMediaWidth(requested: number): CmsMediaWidth {
   return CMS_MEDIA_WIDTHS[CMS_MEDIA_WIDTHS.length - 1];
 }
 
-export function isVehicleSlug(value: string): boolean {
-  return SLUG_PATTERN.test(value);
+export function isCmsMediaWidth(value: number): value is CmsMediaWidth {
+  return (CMS_MEDIA_WIDTHS as readonly number[]).includes(value);
 }
 
-/**
- * URL publique d'une image de véhicule. `v` (le slug) sert uniquement à
- * étiqueter la réponse en cache CDN avec le tag du véhicule : la revalidation
- * envoyée par Synergy à chaque écriture purge alors aussi ses images.
- */
-export function cmsMediaUrl(mediaId: string, vehicleSlug: string): string {
-  const base = `${CMS_MEDIA_PATH_PREFIX}${mediaId}`;
-  return isVehicleSlug(vehicleSlug) ? `${base}?v=${vehicleSlug}` : base;
+/** URL publique d'une image de véhicule (une seule par image : la largeur vient du loader). */
+export function cmsMediaUrl(mediaId: string): string {
+  return `${CMS_MEDIA_PATH_PREFIX}${mediaId}`;
 }
 
 export function isCmsMediaUrl(src: string): boolean {
@@ -52,5 +45,5 @@ export function isCmsMediaUrl(src: string): boolean {
 
 /** Loader `next/image` : demande directement la variante, sans passer par /_next/image. */
 export function cmsMediaLoader({ src, width }: { src: string; width: number }): string {
-  return `${src}${src.includes("?") ? "&" : "?"}w=${snapCmsMediaWidth(width)}`;
+  return `${src}?w=${snapCmsMediaWidth(width)}`;
 }
