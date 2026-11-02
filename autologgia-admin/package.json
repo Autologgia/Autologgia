@@ -15,11 +15,10 @@
     "sanity"
   ],
   "dependencies": {
-    "@sanity/vision": "^5.25.1",
-    "nodemailer": "^8.0.7",
+    "@sanity/vision": "^5.31.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "sanity": "^5.25.1",
+    "sanity": "^5.31.2",
     "styled-components": "^6.1.18"
   },
   "devDependencies": {
@@ -28,6 +27,12 @@
     "eslint": "^9.28",
     "prettier": "^3.5",
     "typescript": "^5.8"
+  },
+  "overrides": {
+    "adm-zip": "^0.6.1",
+    "@vercel/frameworks": {
+      "js-yaml": "^3.15.2"
+    }
   },
   "prettier": {
     "bracketSpacing": false,
