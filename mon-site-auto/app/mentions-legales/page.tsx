@@ -82,15 +82,15 @@ export default function MentionsLegalesPage() {
               <SectionTitle n="4" title="Propriété intellectuelle" />
               <div className="mt-5 space-y-4 leading-relaxed text-navy/70">
                 <p>
-                  L'ensemble des éléments constituant ce site (textes, images, graphismes, logotypes,
+                  L&apos;ensemble des éléments constituant ce site (textes, images, graphismes, logotypes,
                   icônes, logiciels) est la propriété exclusive de FRERES ROUX AUTO ou de ses
                   partenaires. Toute reproduction, représentation, modification, publication ou
                   adaptation, totale ou partielle, par quelque procédé que ce soit, est strictement
-                  interdite sans l'accord préalable écrit de FRERES ROUX AUTO.
+                  interdite sans l&apos;accord préalable écrit de FRERES ROUX AUTO.
                 </p>
                 <p>
                   Les marques et logos des constructeurs automobiles présentés sur le site sont la
-                  propriété exclusive de leurs titulaires respectifs. Leur mention n'implique aucun
+                  propriété exclusive de leurs titulaires respectifs. Leur mention n&apos;implique aucun
                   lien de partenariat ou de représentation officielle.
                 </p>
               </div>
@@ -101,19 +101,19 @@ export default function MentionsLegalesPage() {
               <SectionTitle n="5" title="Limitation de responsabilité" />
               <div className="mt-5 space-y-4 leading-relaxed text-navy/70">
                 <p>
-                  FRERES ROUX AUTO s'efforce d'assurer l'exactitude et la mise à jour des
+                  FRERES ROUX AUTO s&apos;efforce d&apos;assurer l&apos;exactitude et la mise à jour des
                   informations diffusées sur ce site. Toutefois, la société ne peut garantir
-                  l'exactitude, la complétude ou l'actualité des informations présentées et décline
+                  l&apos;exactitude, la complétude ou l&apos;actualité des informations présentées et décline
                   toute responsabilité pour les erreurs ou omissions éventuelles.
                 </p>
                 <p>
                   Les informations relatives aux véhicules (caractéristiques, prix, disponibilité)
-                  sont communiquées à titre indicatif et sont susceptibles d'évoluer sans préavis.
+                  sont communiquées à titre indicatif et sont susceptibles d&apos;évoluer sans préavis.
                   Elles ne constituent pas une offre contractuelle ferme.
                 </p>
                 <p>
                   La société ne saurait être tenue responsable des dommages directs ou indirects
-                  résultant de l'accès au site, de son utilisation ou de l'impossibilité d'y accéder.
+                  résultant de l&apos;accès au site, de son utilisation ou de l&apos;impossibilité d&apos;y accéder.
                 </p>
               </div>
             </section>
@@ -141,7 +141,7 @@ export default function MentionsLegalesPage() {
               <p className="mt-5 leading-relaxed text-navy/70">
                 Ce site utilise uniquement des cookies techniques strictement nécessaires à son
                 fonctionnement (gestion des sessions, préférences de navigation). Aucun cookie de
-                tracking publicitaire ou d'analyse tiers n'est déposé sans votre consentement.
+                tracking publicitaire ou d&apos;analyse tiers n&apos;est déposé sans votre consentement.
               </p>
             </section>
 

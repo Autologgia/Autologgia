@@ -92,7 +92,7 @@ export default function PolitiqueConfidentialitePage() {
                 <SubSection title="Données techniques">
                   <p className="mt-3 leading-relaxed text-navy/70">
                     Lors de votre navigation, des données techniques peuvent être collectées
-                    automatiquement par l'hébergeur (adresse IP, type de navigateur, pages
+                    automatiquement par l&apos;hébergeur (adresse IP, type de navigateur, pages
                     consultées) à des fins de sécurité et de maintenance du service. Ces données
                     ne sont pas exploitées à des fins commerciales par Autologgia.
                   </p>
@@ -144,9 +144,9 @@ export default function PolitiqueConfidentialitePage() {
                   Le traitement de vos données repose sur les bases légales suivantes :
                 </p>
                 <ul className="space-y-2">
-                  <Li><strong className="font-medium text-navy">Votre consentement</strong> — recueilli explicitement via la case à cocher présente sur nos formulaires, conformément à l'article 6.1.a du RGPD.</Li>
+                  <Li><strong className="font-medium text-navy">Votre consentement</strong> — recueilli explicitement via la case à cocher présente sur nos formulaires, conformément à l&apos;article 6.1.a du RGPD.</Li>
                   <Li><strong className="font-medium text-navy">Votre consentement Analytics</strong> — recueilli séparément au moyen du bandeau de choix avant l&apos;activation de Google Analytics 4. Vous pouvez le retirer à tout moment.</Li>
-                  <Li><strong className="font-medium text-navy">L'exécution d'un contrat ou de mesures précontractuelles</strong> — lorsque vous nous sollicitez dans le cadre d'un projet d'achat ou de vente (article 6.1.b du RGPD).</Li>
+                  <Li><strong className="font-medium text-navy">L&apos;exécution d&apos;un contrat ou de mesures précontractuelles</strong> — lorsque vous nous sollicitez dans le cadre d&apos;un projet d&apos;achat ou de vente (article 6.1.b du RGPD).</Li>
                   <Li><strong className="font-medium text-navy">Notre intérêt légitime</strong> — pour assurer la sécurité du site et prévenir les fraudes (article 6.1.f du RGPD).</Li>
                 </ul>
               </div>
@@ -157,16 +157,16 @@ export default function PolitiqueConfidentialitePage() {
               <SectionTitle n="5" title="Durée de conservation" />
               <div className="mt-5 space-y-4 leading-relaxed text-navy/70">
                 <p>
-                  Vos données personnelles sont conservées pour une durée n'excédant pas celle
+                  Vos données personnelles sont conservées pour une durée n&apos;excédant pas celle
                   nécessaire à la finalité pour laquelle elles ont été collectées :
                 </p>
                 <ul className="space-y-2">
-                  <Li><strong className="font-medium text-navy">Données de contact et d'estimation</strong> — 3 ans à compter du dernier contact ou de la dernière interaction.</Li>
-                  <Li><strong className="font-medium text-navy">Données de prospection</strong> — 3 ans à compter de la collecte, ou jusqu'à retrait de votre consentement.</Li>
+                  <Li><strong className="font-medium text-navy">Données de contact et d&apos;estimation</strong> — 3 ans à compter du dernier contact ou de la dernière interaction.</Li>
+                  <Li><strong className="font-medium text-navy">Données de prospection</strong> — 3 ans à compter de la collecte, ou jusqu&apos;à retrait de votre consentement.</Li>
                   <Li><strong className="font-medium text-navy">Données techniques</strong> — 12 mois conformément aux obligations légales applicables.</Li>
                 </ul>
                 <p>
-                  À l'expiration de ces délais, vos données sont supprimées ou anonymisées.
+                  À l&apos;expiration de ces délais, vos données sont supprimées ou anonymisées.
                 </p>
               </div>
             </section>
@@ -176,18 +176,18 @@ export default function PolitiqueConfidentialitePage() {
               <SectionTitle n="6" title="Destinataires des données" />
               <div className="mt-5 space-y-4 leading-relaxed text-navy/70">
                 <p>
-                  Vos données sont traitées par l'équipe d'Autologgia (FRERES ROUX AUTO) dans le
+                  Vos données sont traitées par l&apos;équipe d&apos;Autologgia (FRERES ROUX AUTO) dans le
                   cadre strict de vos demandes. Elles peuvent être transmises aux sous-traitants
                   techniques suivants, exclusivement pour les besoins du service :
                 </p>
                 <ul className="space-y-2">
                   <Li><strong className="font-medium text-navy">Vercel Inc.</strong> (hébergement du site) — Politique de confidentialité disponible sur vercel.com</Li>
-                  <Li><strong className="font-medium text-navy">Resend Inc.</strong> (envoi d'e-mails transactionnels) — Politique disponible sur resend.com</Li>
+                  <Li><strong className="font-medium text-navy">Resend Inc.</strong> (envoi d&apos;e-mails transactionnels) — Politique disponible sur resend.com</Li>
                   <Li><strong className="font-medium text-navy">Sanity AS</strong> (gestion du contenu CMS) — Politique disponible sur sanity.io</Li>
                   <Li><strong className="font-medium text-navy">Google Analytics 4</strong> (mesure d&apos;audience, uniquement après consentement) — Politique disponible sur policies.google.com/privacy</Li>
                 </ul>
                 <p>
-                  Ces sous-traitants agissent sur instruction d'Autologgia et s'engagent
+                  Ces sous-traitants agissent sur instruction d&apos;Autologgia et s&apos;engagent
                   contractuellement à respecter la confidentialité et la sécurité de vos données.
                 </p>
               </div>
@@ -202,12 +202,12 @@ export default function PolitiqueConfidentialitePage() {
                   droits suivants concernant vos données personnelles :
                 </p>
                 <ul className="space-y-2">
-                  <Li><strong className="font-medium text-navy">Droit d'accès</strong> — obtenir la confirmation que des données vous concernant sont traitées et en recevoir une copie.</Li>
+                  <Li><strong className="font-medium text-navy">Droit d&apos;accès</strong> — obtenir la confirmation que des données vous concernant sont traitées et en recevoir une copie.</Li>
                   <Li><strong className="font-medium text-navy">Droit de rectification</strong> — demander la correction de données inexactes ou incomplètes.</Li>
-                  <Li><strong className="font-medium text-navy">Droit à l'effacement</strong> — demander la suppression de vos données dans les cas prévus par la loi.</Li>
+                  <Li><strong className="font-medium text-navy">Droit à l&apos;effacement</strong> — demander la suppression de vos données dans les cas prévus par la loi.</Li>
                   <Li><strong className="font-medium text-navy">Droit à la limitation</strong> — demander la suspension du traitement dans certains cas.</Li>
                   <Li><strong className="font-medium text-navy">Droit à la portabilité</strong> — recevoir vos données dans un format structuré et lisible par machine.</Li>
-                  <Li><strong className="font-medium text-navy">Droit d'opposition</strong> — vous opposer au traitement de vos données, notamment à des fins de prospection.</Li>
+                  <Li><strong className="font-medium text-navy">Droit d&apos;opposition</strong> — vous opposer au traitement de vos données, notamment à des fins de prospection.</Li>
                   <Li><strong className="font-medium text-navy">Droit de retrait du consentement</strong> — retirer à tout moment votre consentement sans que cela remette en cause la licéité des traitements effectués avant ce retrait.</Li>
                 </ul>
                 <p>
@@ -219,12 +219,12 @@ export default function PolitiqueConfidentialitePage() {
                     autologgia.web@gmail.com
                   </a>
                   {" "}en précisant votre identité. Nous nous engageons à vous répondre dans un
-                  délai d'un mois.
+                  délai d&apos;un mois.
                 </p>
                 <p>
-                  Vous avez également le droit d'introduire une réclamation auprès de la{" "}
+                  Vous avez également le droit d&apos;introduire une réclamation auprès de la{" "}
                   <strong className="font-medium text-navy">CNIL</strong> (Commission Nationale
-                  de l'Informatique et des Libertés) sur{" "}
+                  de l&apos;Informatique et des Libertés) sur{" "}
                   <span className="font-medium text-navy">cnil.fr</span>.
                 </p>
               </div>
