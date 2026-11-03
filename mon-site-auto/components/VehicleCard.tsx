@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMediaQuery } from "@/lib/use-media-query";
 import type { Car } from "@/lib/types";
 import { formatCarPrice, formatMileage, formatPower } from "@/lib/format";
@@ -14,9 +14,10 @@ interface Props {
   isFavorite: boolean;
   onToggleFavorite: (slug: string) => void;
   priority?: boolean;
+  imageSizes?: string;
 }
 
-export default function VehicleCard({ car, isFavorite, onToggleFavorite, priority = false }: Props) {
+export default function VehicleCard({ car, isFavorite, onToggleFavorite, priority = false, imageSizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" }: Props) {
   const images = useMemo(
     () =>
       (car.images ?? []).map((image) => ({
@@ -28,11 +29,30 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
 
   const isMobile = useMediaQuery("(max-width: 767px) and (prefers-reduced-motion: no-preference)");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [nearViewport, setNearViewport] = useState(false);
   const statusInfo = getVehicleStatusInfo(car.status);
   const hasMultipleImages = images.length > 1;
   const formattedPrice = formatCarPrice(car.numericPrice, car.price);
   const formattedMileage = formatMileage(car.mileage);
   const formattedPower = formatPower(car.power);
+
+  useEffect(() => {
+    const element = cardRef.current;
+    if (!isMobile || !element) return;
+    if (typeof IntersectionObserver === "undefined") {
+      const timer = window.setTimeout(() => setNearViewport(true), 0);
+      return () => window.clearTimeout(timer);
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setNearViewport(true);
+        observer.disconnect();
+      }
+    }, {rootMargin: "200px"});
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [isMobile]);
 
   function markVehicleNavigation() {
     try {
@@ -50,22 +70,22 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
 
   // Rotation automatique mobile — 2 500 ms, transition identique à VehicleGallery
   useEffect(() => {
-    if (!isMobile || !hasMultipleImages) return;
+    if (!isMobile || !hasMultipleImages || !nearViewport) return;
 
     const interval = window.setInterval(() => {
       setCurrentImageIndex((current) => (current + 1) % images.length);
     }, 2500);
 
     return () => window.clearInterval(interval);
-  }, [hasMultipleImages, images.length, isMobile]);
+  }, [hasMultipleImages, images.length, isMobile, nearViewport]);
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/5 bg-navy-light transition-all duration-500 hover:-translate-y-1.5 hover:border-[#C9A84C]/30 hover:shadow-[0_16px_48px_rgba(201,168,76,0.12)]">
+    <div ref={cardRef} className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/5 bg-navy-light transition-all duration-500 hover:-translate-y-1.5 hover:border-[#C9A84C]/30 hover:shadow-[0_16px_48px_rgba(201,168,76,0.12)]">
 
       {/* ── Image ── */}
       <div className="relative h-56 overflow-hidden bg-navy-mid">
         {images.length > 0 ? (
-          isMobile && hasMultipleImages ? (
+          isMobile && hasMultipleImages && nearViewport ? (
             // Mobile : toutes les images empilées, pur cross-fade opacity — identique à VehicleGallery
             images.map((image, index) => (
               <Image
@@ -77,7 +97,7 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
                 className={`object-cover transition-opacity duration-700 ease-in-out ${
                   index === currentImageIndex ? "opacity-100" : "opacity-0"
                 }`}
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                sizes={imageSizes}
                 priority={index === 0 && priority}
               />
             ))
@@ -89,7 +109,7 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
               alt={images[0].alt}
               fill
               className="object-cover transition duration-700 group-hover:scale-105"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              sizes={imageSizes}
               priority={priority}
             />
           )

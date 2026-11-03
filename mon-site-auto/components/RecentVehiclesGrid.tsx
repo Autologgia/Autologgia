@@ -314,6 +314,7 @@ export default function RecentVehiclesGrid({ cars }: { cars: Car[] }) {
                     car={car}
                     isFavorite={favorites.includes(car.slug)}
                     onToggleFavorite={toggleFavorite}
+                    imageSizes="(max-width: 1023px) 260px, 360px"
                   />
                 </div>
               );
