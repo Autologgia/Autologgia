@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useFavorites } from "@/lib/use-favorites";
 import type { Car } from "@/lib/types";
 import { getCarPriceValue, parseNumericValue } from "@/lib/format";
 import VehicleCard from "./VehicleCard";
@@ -62,15 +63,10 @@ export default function VehicleGrid({ cars }: { cars: Car[] }) {
   const [model, setModel] = useState("Tous");
   const [sort, setSort] = useState("defaut");
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favorites, setFavorites] = useFavorites();
   const [forceRevealCards, setForceRevealCards] = useState(false);
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("autologgia-favorites");
-      if (saved) setFavorites(JSON.parse(saved));
-    } catch {}
-  }, []);
+
 
   useEffect(() => {
     try {
@@ -82,8 +78,9 @@ export default function VehicleGrid({ cars }: { cars: Car[] }) {
         sessionStorage.getItem("autologgia-returning-from-vehicle") === "1";
 
       if (isBackNavigation || isReturningFromVehicle) {
-        setForceRevealCards(true);
+        const frame = window.requestAnimationFrame(() => setForceRevealCards(true));
         sessionStorage.removeItem("autologgia-returning-from-vehicle");
+        return () => window.cancelAnimationFrame(frame);
       }
     } catch {}
   }, []);
@@ -93,9 +90,6 @@ export default function VehicleGrid({ cars }: { cars: Car[] }) {
       const next = prev.includes(slug)
         ? prev.filter((s) => s !== slug)
         : [...prev, slug];
-      try {
-        localStorage.setItem("autologgia-favorites", JSON.stringify(next));
-      } catch {}
       return next;
     });
   }
@@ -401,22 +395,19 @@ function AnimatedVehicleCard({
   priority?: boolean;
 }) {
   const wrapRef  = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const delayRef = useRef(0);
+  const [reveal, setReveal] = useState({visible: false, delay: 0});
+  const visible = forceVisible || reveal.visible;
 
   useEffect(() => {
-    if (forceVisible) {
-      setVisible(true);
-      return;
-    }
+    if (forceVisible) return;
 
     const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
-    delayRef.current = isDesktop ? (gridIndex % 3) * 100 : 0;
+    const delay = isDesktop ? (gridIndex % 3) * 100 : 0;
 
     const el = wrapRef.current;
     if (!el) return;
     const io = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); io.disconnect(); } },
+      ([entry]) => { if (entry.isIntersecting) { setReveal({visible: true, delay}); io.disconnect(); } },
       { threshold: 0.06, rootMargin: "0px 0px -24px 0px" }
     );
     io.observe(el);
@@ -430,7 +421,7 @@ function AnimatedVehicleCard({
         opacity:   visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(28px)",
         transition: visible
-          ? `opacity 0.55s ease ${delayRef.current}ms, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${delayRef.current}ms`
+          ? `opacity 0.55s ease ${reveal.delay}ms, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${reveal.delay}ms`
           : "none",
       }}
     >

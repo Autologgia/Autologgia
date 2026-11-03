@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import TrackedLink from "@/components/TrackedLink";
 
@@ -22,7 +22,11 @@ const WHATSAPP_URL   = "https://wa.me/33664799424?text=Bonjour%2C+je+souhaite+de
 const MOBILE_MENU_EVENT = "autologgia-mobile-menu";
 // ────────────────────────────────────────────────────────────────────────────
 
-function isActive(pathname: string, href: string): boolean {
+const subscribeToHydration = () => () => {};
+const serverPathname = () => null;
+
+function isActive(pathname: string | null, href: string): boolean {
+  if (pathname === null) return false;
   if (href.startsWith("/#")) return false;
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(href + "/");
@@ -30,7 +34,10 @@ function isActive(pathname: string, href: string): boolean {
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const pathname = usePathname();
+  const routerPathname = usePathname();
+  // Same fallback for SSR and the first client render; only the active marker
+  // depends on the browser path after hydration (including rewrites).
+  const pathname = useSyncExternalStore(subscribeToHydration, () => routerPathname, serverPathname);
   const close = () => setMenuOpen(false);
 
   useEffect(() => {

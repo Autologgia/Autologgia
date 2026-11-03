@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Image from "next/image";
 
 export default function Footer() {
@@ -21,10 +22,10 @@ export default function Footer() {
 
           <div className="flex flex-col gap-6">
             <nav className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm text-gray-500 md:flex md:flex-wrap md:gap-x-8">
-              <a href="/catalogue" className="transition hover:text-white">Catalogue</a>
-              <a href="/estimation" className="transition hover:text-white">Estimation</a>
-              <a href="/#histoire" className="transition hover:text-white">Notre histoire</a>
-              <a href="/contact" className="transition hover:text-white">Contact</a>
+              <Link href="/catalogue" className="transition hover:text-white">Catalogue</Link>
+              <Link href="/estimation" className="transition hover:text-white">Estimation</Link>
+              <Link href="/#histoire" className="transition hover:text-white">Notre histoire</Link>
+              <Link href="/contact" className="transition hover:text-white">Contact</Link>
             </nav>
 
             {/* Réseaux sociaux */}

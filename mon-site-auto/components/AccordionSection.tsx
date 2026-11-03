@@ -11,7 +11,6 @@ interface Props {
 
 export default function AccordionSection({
   title,
-  preview,
   defaultOpen = false,
   children,
 }: Props) {

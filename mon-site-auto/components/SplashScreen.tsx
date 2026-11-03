@@ -14,12 +14,12 @@ export default function SplashScreen() {
   useEffect(() => {
     const isDesktop     = window.matchMedia("(min-width: 1024px)").matches;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const seen          = localStorage.getItem(SPLASH_KEY);
-
-    if (!isDesktop || reducedMotion || seen) return;
-
-    localStorage.setItem(SPLASH_KEY, "1");
-    setShow(true);
+    if (!isDesktop || reducedMotion) return;
+    try {
+      if (localStorage.getItem(SPLASH_KEY)) return;
+      localStorage.setItem(SPLASH_KEY, "1");
+    } catch { /* Storage restrictions must not prevent the page from working. */ }
+    const start = window.requestAnimationFrame(() => setShow(true));
 
     const t1 = setTimeout(() => setLeaving(true), T_EXIT_START);
     const t2 = setTimeout(() => {
@@ -27,6 +27,7 @@ export default function SplashScreen() {
     }, T_UNMOUNT);
 
     return () => {
+      window.cancelAnimationFrame(start);
       clearTimeout(t1);
       clearTimeout(t2);
     };

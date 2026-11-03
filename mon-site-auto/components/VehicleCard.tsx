@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useMediaQuery } from "@/lib/use-media-query";
 import type { Car } from "@/lib/types";
 import { formatCarPrice, formatMileage, formatPower } from "@/lib/format";
 import { getVehicleStatusInfo } from "@/lib/vehicle-status";
@@ -25,7 +26,7 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
     [car.images, car.name]
   );
 
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 767px) and (prefers-reduced-motion: no-preference)");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const statusInfo = getVehicleStatusInfo(car.status);
   const hasMultipleImages = images.length > 1;
@@ -39,29 +40,13 @@ export default function VehicleCard({ car, isFavorite, onToggleFavorite, priorit
     } catch {}
   }
 
-  // Détecte mobile ET prefers-reduced-motion (identique à l'existant)
-  useEffect(() => {
-    const mobileQuery = window.matchMedia("(max-width: 767px)");
-    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-    function update() {
-      setIsMobile(mobileQuery.matches && !reducedMotionQuery.matches);
-    }
-
-    update();
-    mobileQuery.addEventListener("change", update);
-    reducedMotionQuery.addEventListener("change", update);
-
-    return () => {
-      mobileQuery.removeEventListener("change", update);
-      reducedMotionQuery.removeEventListener("change", update);
-    };
-  }, []);
-
-  // Reset à 0 quand le véhicule change
-  useEffect(() => {
+  // Reset during render when the input changes, before painting stale media.
+  const identity = `${car.slug}:${images.length}`;
+  const [previousIdentity, setPreviousIdentity] = useState(identity);
+  if (previousIdentity !== identity) {
+    setPreviousIdentity(identity);
     setCurrentImageIndex(0);
-  }, [car.slug, images.length]);
+  }
 
   // Rotation automatique mobile — 2 500 ms, transition identique à VehicleGallery
   useEffect(() => {

@@ -43,12 +43,14 @@ export default function VehicleGallery({ images }: { images: GalleryImage[] }) {
     return () => clearInterval(interval);
   }, [total, isHovered, isRailInteracting, showAllImages, timerKey]);
 
-  useEffect(() => {
+  const [previousImages, setPreviousImages] = useState(images);
+  if (previousImages !== images) {
+    setPreviousImages(images);
     setActiveIndex(0);
     setMobileThumbStart(0);
     setDesktopThumbStart(0);
     setShowAllImages(false);
-  }, [images]);
+  }
 
   if (total === 0) return null;
 

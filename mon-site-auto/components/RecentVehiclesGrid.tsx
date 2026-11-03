@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import VehicleCard from "@/components/VehicleCard";
+import { useMediaQuery } from "@/lib/use-media-query";
+import { useFavorites } from "@/lib/use-favorites";
 import type { Car } from "@/lib/types";
 
-const FAVORITES_KEY   = "autologgia-favorites";
 const ROTATE_MS       = 2200;
 const RESUME_MS       = 10_000;
 const DRAG_THRESHOLD  = 50;   // px — minimum drag to trigger navigation
@@ -12,10 +13,10 @@ const DRAG_INTENT     = 8;    // px — minimum movement to be considered a drag
 const PRESS_ANIM_MS   = 440;  // duration of the center-card press animation
 
 export default function RecentVehiclesGrid({ cars }: { cars: Car[] }) {
-  const [favorites, setFavorites]       = useState<string[]>([]);
+  const [favorites, setFavorites] = useFavorites();
   const [visible, setVisible]           = useState(false);
   const [activeIndex, setActiveIndex]   = useState(0);
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const [pressAnim, setPressAnim]       = useState(false);
   const [isDragging, setIsDragging]     = useState(false);
   const [isInteractive, setIsInteractive] = useState(false);
@@ -34,21 +35,10 @@ export default function RecentVehiclesGrid({ cars }: { cars: Car[] }) {
   useEffect(() => { reducedMotionRef.current = reducedMotion; }, [reducedMotion]);
 
   // ── Favorites ──────────────────────────────────────────────────────────────
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(FAVORITES_KEY);
-      if (stored) setFavorites(JSON.parse(stored));
-    } catch {}
-  }, []);
+
 
   // ── prefers-reduced-motion ─────────────────────────────────────────────────
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReducedMotion(mq.matches);
-    const onChange = () => setReducedMotion(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
+
 
   // ── Dimensions du carousel : tablettes (< 1024px) vs desktop ──────────────
   useEffect(() => {
@@ -186,7 +176,6 @@ export default function RecentVehiclesGrid({ cars }: { cars: Car[] }) {
   const toggleFavorite = (slug: string) => {
     setFavorites(prev => {
       const next = prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug];
-      try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
   };
