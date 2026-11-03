@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { trackGA4Event } from "@/lib/analytics";
 import { getAttributionForSubmit } from "@/lib/attribution";
 import { newSubmissionId } from "@/lib/lead-submission";
+import { prepareEstimationPhotos } from "@/lib/prepare-estimation-photos";
+import { ESTIMATION_BODY_LIMIT_BYTES, type EstimationPhoto } from "@/lib/estimation-photos";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -15,26 +17,6 @@ const selectCls =
 
 const labelCls = "text-sm font-medium text-gray-300";
 
-const MAX_PHOTOS = 4;
-const MAX_PHOTO_MB = 3;
-
-type PhotoData = { filename: string; content: string };
-
-async function filesToBase64(files: FileList): Promise<PhotoData[]> {
-  const result: PhotoData[] = [];
-  const allowed = Array.from(files).slice(0, MAX_PHOTOS);
-  for (const file of allowed) {
-    if (file.size > MAX_PHOTO_MB * 1024 * 1024) continue;
-    const base64 = await new Promise<string>((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve((e.target?.result as string).split(",")[1]);
-      reader.readAsDataURL(file);
-    });
-    result.push({ filename: file.name, content: base64 });
-  }
-  return result;
-}
-
 export default function EstimateForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -45,6 +27,7 @@ export default function EstimateForm() {
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (status === "loading") return;
     setStatus("loading");
     setErrorMessage("");
 
@@ -53,13 +36,15 @@ export default function EstimateForm() {
       (form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement)?.value ?? "";
 
     const files = fileInputRef.current?.files;
-    let photos: PhotoData[] = [];
+    let photos: EstimationPhoto[] = [];
     try {
       if (files && files.length > 0) {
-        photos = await filesToBase64(files);
+        photos = await prepareEstimationPhotos(files);
       }
-    } catch {
-      // photos silently skipped if conversion fails
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "Impossible de préparer les photos. Réessayez.");
+      return;
     }
 
     const data = {
@@ -83,15 +68,26 @@ export default function EstimateForm() {
     };
 
     try {
+      const payload = JSON.stringify(data);
+      if (new TextEncoder().encode(payload).byteLength > ESTIMATION_BODY_LIMIT_BYTES) {
+        setStatus("error");
+        setErrorMessage("Demande trop volumineuse. Réduisez la taille ou le nombre des photos.");
+        return;
+      }
       const res = await fetch("/api/estimation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: payload,
       });
 
-      const result = await res.json();
+      const result = await res.json().catch(() => null);
+      if (!result) {
+        setStatus("error");
+        setErrorMessage(res.status === 413 ? "Photos trop volumineuses. Réduisez leur taille ou leur nombre." : "Le serveur n’a pas pu traiter la demande. Réessayez.");
+        return;
+      }
 
-      if (result.success) {
+      if (res.ok && result.success) {
         submissionIdRef.current = null;
         if (res.ok && !data.website.trim()) {
           trackGA4Event("generate_lead", {
@@ -250,7 +246,8 @@ export default function EstimateForm() {
       <div>
         <label className={labelCls}>Photos du véhicule</label>
         <p className="mb-2 mt-1 text-xs text-gray-500">
-          Optionnel · Jusqu&apos;à {MAX_PHOTOS} photos · {MAX_PHOTO_MB} Mo max par photo (JPEG, PNG)
+          Optionnel · Jusqu&apos;à 4 photos · 3 Mo max par photo (JPEG, PNG, WebP).
+          Photos réduites si nécessaire, 2,5 Mo au total.
         </p>
         <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#e5e3dd] bg-[#f8f7f5] px-4 py-6 text-center transition hover:border-[#C9A84C]/50">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#C9A84C]">

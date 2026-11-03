@@ -44,9 +44,9 @@ const CONTACT = {
 };
 
 function run() {
-  return contact(new Request("https://autologgia.test/api/contact", {
+  return contact(new Request("https://www.autologgia.fr/api/contact", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Origin: "https://www.autologgia.fr" },
     body: JSON.stringify(CONTACT),
   }));
 }

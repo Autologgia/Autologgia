@@ -1,3 +1,4 @@
+import { readFormJson, formRequestError } from "@/lib/form-request";
 import { Resend } from "resend";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getCmsSource } from "@/lib/cms/config";
@@ -59,17 +60,11 @@ export async function POST(req: Request) {
     return jsonError("Trop de demandes. Reessayez plus tard.", 429);
   }
 
-  const contentLength = Number(req.headers.get("content-length") ?? "0");
-  if (contentLength > MAX_BODY_BYTES) {
-    return jsonError("Demande trop volumineuse.", 413);
-  }
-
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return jsonError("Requete invalide.");
-  }
+  const requestError = formRequestError(req);
+  if (requestError) return requestError;
+  const parsed = await readFormJson(req, MAX_BODY_BYTES);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.body;
 
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return jsonError("Requete invalide.");
@@ -117,6 +112,10 @@ export async function POST(req: Request) {
 
   if (vehicleSlug && !SLUG_PATTERN.test(vehicleSlug)) {
     return jsonError("Véhicule invalide.");
+  }
+
+  if (process.env.VERCEL_ENV === "preview") {
+    return jsonError("Les envois sont désactivés sur cette version de test.", 503);
   }
 
   // Un rejeu de la même soumission (réessai après erreur réseau) réutilise la

@@ -43,9 +43,9 @@ import { POST as estimation } from "@/app/api/estimation/route";
 const submissionId = "ce45bf8f-af4c-46e4-8476-64bbc3d8fef3";
 
 function request(path: string, payload: Record<string, unknown>) {
-  return new Request(`https://autologgia.test${path}`, {
+  return new Request(`https://www.autologgia.fr${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Origin: "https://www.autologgia.fr" },
     body: JSON.stringify(payload),
   });
 }
@@ -147,7 +147,7 @@ describe("formulaires — un succès partiel est traité comme un succès comple
   it.each(CLIENT_FORMS)("%s efface le submissionId dès result.success", (file) => {
     const source = readFileSync(file, "utf8").replace(/\r\n/g, "\n");
 
-    expect(source).toContain("if (result.success) {");
+    expect(source).toMatch(/if \((?:res\.ok && )?result\.success\) \{/);
     expect(source).toContain("submissionIdRef.current = null;");
   });
 

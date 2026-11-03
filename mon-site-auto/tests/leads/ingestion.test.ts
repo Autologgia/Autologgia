@@ -18,8 +18,8 @@ const submissionId = "ce45bf8f-af4c-46e4-8476-64bbc3d8fef3";
 const attribution = { firstLandingPage: "/", conversionPage: "/contact", utmSource: "google", gclid: "test-click" };
 
 function request(path: string, payload: Record<string, unknown>) {
-  return new Request(`https://autologgia.test${path}`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+  return new Request(`https://www.autologgia.fr${path}`, {
+    method: "POST", headers: { "Content-Type": "application/json", Origin: "https://www.autologgia.fr" }, body: JSON.stringify(payload),
   });
 }
 

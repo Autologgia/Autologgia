@@ -1,3 +1,5 @@
+import { ESTIMATION_BODY_LIMIT_BYTES, MAX_PHOTOS, MAX_PHOTO_BYTES, MAX_TOTAL_PHOTO_BYTES } from "@/lib/estimation-photos";
+import { readFormJson, formRequestError } from "@/lib/form-request";
 import { Resend } from "resend";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanityWriteToken, writeClient } from "@/lib/sanity-write";
@@ -19,9 +21,7 @@ const TO = process.env.RESEND_TO_EMAIL ?? "autologgia.web@gmail.com";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[0-9+().\-\s]{6,30}$/;
-const MAX_BODY_BYTES = 18 * 1024 * 1024;
-const MAX_PHOTOS = 4;
-const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
+const MAX_BODY_BYTES = ESTIMATION_BODY_LIMIT_BYTES;
 const ALLOWED_FIELDS = new Set([
   "brand",
   "model",
@@ -81,26 +81,24 @@ function sanitizeFilename(filename: unknown) {
 }
 
 function buildAttachments(photos: unknown): Attachment[] {
-  if (!Array.isArray(photos)) return [];
-
-  const attachments: Attachment[] = [];
-  for (const photo of photos.slice(0, MAX_PHOTOS)) {
-    if (!photo || typeof photo !== "object" || Array.isArray(photo)) continue;
+  if (photos === undefined) return [];
+  if (!Array.isArray(photos) || photos.length > MAX_PHOTOS) throw new Error("Sélectionnez au maximum 4 photos.");
+  let total = 0;
+  return photos.map((photo) => {
+    if (!photo || typeof photo !== "object" || Array.isArray(photo)) throw new Error("Photo invalide.");
     const { filename, content } = photo as Partial<PhotoData>;
     const safeFilename = sanitizeFilename(filename);
-    if (!safeFilename || typeof content !== "string") continue;
-    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(content)) continue;
-
-    try {
-      const buffer = Buffer.from(content, "base64");
-      if (buffer.length === 0 || buffer.length > MAX_PHOTO_BYTES) continue;
-      attachments.push({ filename: safeFilename, content: buffer });
-    } catch {
-      // Ignore malformed photos.
-    }
-  }
-
-  return attachments;
+    if (!safeFilename || typeof content !== "string" || content.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(content)) throw new Error("Format de photo invalide (JPG, PNG ou WebP).");
+    const buffer = Buffer.from(content, "base64");
+    total += buffer.length;
+    if (!buffer.length || buffer.length > MAX_PHOTO_BYTES || total > MAX_TOTAL_PHOTO_BYTES) throw new Error("Photos trop volumineuses : réduisez leur taille ou leur nombre (2,5 Mo au total).");
+    const extension = safeFilename.split(".").pop()!.toLowerCase();
+    const jpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    const png = buffer.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
+    const webp = buffer.subarray(0, 4).toString() === "RIFF" && buffer.subarray(8, 12).toString() === "WEBP";
+    if (!((jpeg && ["jpg","jpeg"].includes(extension)) || (png && extension === "png") || (webp && extension === "webp"))) throw new Error("Le contenu de la photo ne correspond pas à son format.");
+    return { filename: safeFilename, content: buffer };
+  });
 }
 
 export async function POST(req: Request) {
@@ -108,17 +106,11 @@ export async function POST(req: Request) {
     return jsonError("Trop de demandes. Reessayez plus tard.", 429);
   }
 
-  const contentLength = Number(req.headers.get("content-length") ?? "0");
-  if (contentLength > MAX_BODY_BYTES) {
-    return jsonError("Demande trop volumineuse.", 413);
-  }
-
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return jsonError("Requete invalide.");
-  }
+  const requestError = formRequestError(req);
+  if (requestError) return requestError;
+  const parsed = await readFormJson(req, MAX_BODY_BYTES);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.body;
 
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return jsonError("Requete invalide.");
@@ -190,7 +182,13 @@ export async function POST(req: Request) {
     correct: "Correct - quelques defauts mineurs",
     a_reviser: "A reviser - necessite des travaux",
   };
-  const attachments = buildAttachments(raw.photos);
+  let attachments: Attachment[];
+  try { attachments = buildAttachments(raw.photos); }
+  catch (error) { return jsonError(error instanceof Error ? error.message : "Photo invalide."); }
+
+  if (process.env.VERCEL_ENV === "preview") {
+    return jsonError("Les envois sont désactivés sur cette version de test.", 503);
+  }
 
   // Un rejeu de la même soumission (réessai après erreur réseau) réutilise la
   // même clé : ni email ni prospect dupliqués.

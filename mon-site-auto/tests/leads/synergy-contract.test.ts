@@ -36,8 +36,8 @@ const URL_KEYS = ["firstLandingPage", "conversionPage", "referrer"];
 type Payload = Record<string, unknown>;
 
 function request(path: string, payload: Record<string, unknown>) {
-  return new Request(`https://autologgia.test${path}`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+  return new Request(`https://www.autologgia.fr${path}`, {
+    method: "POST", headers: { "Content-Type": "application/json", Origin: "https://www.autologgia.fr" }, body: JSON.stringify(payload),
   });
 }
 
